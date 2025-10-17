@@ -1,0 +1,36 @@
+[
+  {
+    "job_id": 0,
+    "parameters": {
+      "wavelength": 2.0,
+      "ellipsoid_semi_axis_a": 0.2,
+      "ellipsoid_semi_axis_b": 0.2,
+      "ellipsoid_semi_axis_c": 0.4,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "R": 3.0,
+      "PMLw": 0.5,
+      "h_max": 0.4
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "fes_order": 2,
+      "maxiter": 500,
+      "tol": 1e-05
+    },
+    "output": {
+      "save_solution": true
+    }
+  }
+]

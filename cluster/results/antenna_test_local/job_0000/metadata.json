@@ -1,0 +1,46 @@
+{
+  "job_id": 0,
+  "problem_type": "antenna",
+  "parameters": {
+    "wavelength": 0.65,
+    "wavenumber": 9.66643893412244,
+    "polarization": [
+      1,
+      0,
+      0
+    ],
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.8,
+      "curve_order": 3
+    }
+  },
+  "solver": {
+    "method": "gmres",
+    "preconditioner": "block_jacobi",
+    "fes_order": 3
+  },
+  "mesh": {
+    "elements": 2422,
+    "vertices": 484,
+    "ndof": 61652,
+    "free_dofs": 59328
+  },
+  "timings": {
+    "mesh_gen": 0.1979184060000989,
+    "source_setup": 0.0002649830021255184,
+    "assembly": 0.016753953997977078,
+    "solve": 29.201187946000573,
+    "total": 29.416125289000775
+  },
+  "resources": {
+    "cpus": 2
+  },
+  "environment": {
+    "is_slurm": false,
+    "slurm_job_id": "N/A"
+  }
+}

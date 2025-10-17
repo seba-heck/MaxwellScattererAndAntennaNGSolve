@@ -1,0 +1,52 @@
+# MaxwellScattererAndAntennaNGSolve Antenna Sweep Configuration
+
+sweep_name: "antenna_sweep"
+output_dir: "results/antenna_sweep"
+
+geometry:
+  type: "spherical"
+  R: 1.0          # Outer computational domain radius
+  r: 0.1          # Antenna radius
+  PMLw: 0.25      # PML layer width
+  h_max: 0.5      # Maximum mesh element size
+  curve_order: 5  # Mesh curvature order
+
+parameters:
+  wavelength:
+    values: [0.5, 0.65, 0.8, 1.0]
+
+  polarization:
+    values:
+      - [1, 0, 0]  # x-polarization
+      - [0, 1, 0]  # y-polarization
+      - [0, 0, 1]  # z-polarization
+
+  amplitude:
+    values: [1.0, 2.0]  # Antenna excitation amplitude
+
+# Total jobs: 4 × 3 × 2 = 24
+
+solver:
+  method: "gmres"
+  preconditioner: "block_jacobi"
+  maxiter: 1000
+  tol: 1.0e-6
+  fes_order: 5
+
+output:
+  save_solution: false
+  save_metadata: true
+  save_timings: true
+
+resources:
+  cpus: 32
+  mem_per_cpu: "10G"
+  time: "01:00:00"
+  partition: "normal"
+
+environment:
+  venv_path: "$HOME/.venvs/ngs311"
+  modules:
+    - "stack/2024-06"
+    - "gcc/12.2.0"
+    - "python/3.11.6"

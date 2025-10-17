@@ -1,0 +1,49 @@
+# Dipole Antenna Geometry Parametric Sweep
+# Studies radiation from cylindrical dipole antennas with varying length
+
+sweep_name: "dipole_length_study"
+
+# Physical parameters
+parameters:
+  wavelength:
+    values: [0.65]  # 461 MHz
+
+  # Dipole geometry parameters
+  dipole_length_factor:
+    values: [0.3, 0.4, 0.5, 0.6, 0.7]  # L = factor × λ (half-wave at 0.5)
+
+  dipole_radius_factor:
+    values: [0.01]  # r = factor × λ (thin wire)
+
+  # Optional: orientation
+  # dipole_orientation:
+  #   values: ['z']  # Dipole along z-axis (default)
+
+  # Antenna excitation parameters
+  amplitude:
+    values: [1.0]
+
+  polarization:
+    values:
+      - [0, 0, 1]  # z-polarized (along dipole axis)
+      - [1, 0, 0]  # x-polarized (perpendicular)
+
+# Geometry configuration
+geometry:
+  R: 1.0       # Outer domain radius
+  PMLw: 0.25   # PML layer width
+  # h_max: auto-determined from wavelength
+
+# Solver configuration
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 3  # Lower order for faster computation
+  maxiter: 1000
+  tol: 1.0e-6
+
+# Output configuration
+output:
+  save_solution: false
+
+# Total jobs: 5 (length_factor) × 1 (radius_factor) × 1 (amplitude) × 2 (pol) = 10 jobs

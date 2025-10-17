@@ -1,0 +1,49 @@
+# Local Test Configuration
+# Small parameter sweep for testing workflow locally
+
+sweep_name: "test_local"
+output_dir: "results/test_local"
+
+geometry:
+  type: "spherical"
+  R: 1.0
+  r: 0.1
+  PMLw: 0.25
+  h_max: 0.8      # Coarser mesh for faster execution
+  curve_order: 3  # Lower order for speed
+
+parameters:
+  wavelength:
+    values: [0.65, 0.75]  # Just 2 values
+
+  propagation_dir:
+    values:
+      - [0, 0, 1]        # z-direction only
+
+  polarization:
+    values:
+      - [1, 0, 0]        # x-polarization only
+
+# Total jobs: 2 × 1 × 1 = 2 jobs (quick test)
+
+solver:
+  method: "gmres"
+  preconditioner: "block_jacobi"
+  maxiter: 500           # Fewer iterations for testing
+  tol: 1.0e-6
+  fes_order: 3           # Lower order for speed
+
+output:
+  save_solution: false
+  save_metadata: true
+  save_timings: true
+
+resources:
+  cpus: 4                # Use local cores
+  mem_per_cpu: "4G"
+  time: "00:10:00"
+  partition: "normal"
+
+environment:
+  venv_path: ""          # Use current environment
+  modules: []            # No modules for local testing

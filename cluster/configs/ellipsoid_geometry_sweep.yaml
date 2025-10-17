@@ -1,0 +1,54 @@
+# Ellipsoid Geometry Parametric Sweep
+# Studies scattering from ellipsoidal objects with varying aspect ratios
+
+sweep_name: "ellipsoid_aspect_ratio_study"
+
+# Physical parameters
+parameters:
+  wavelength:
+    values: [0.65]  # 461 MHz
+
+  # Ellipsoid geometry parameters (tri-axial)
+  ellipsoid_semi_axis_a:
+    values: [0.05, 0.08, 0.10]  # x semi-axis in meters
+
+  ellipsoid_semi_axis_b:
+    values: [0.05]  # y semi-axis (keep constant)
+
+  ellipsoid_semi_axis_c:
+    values: [0.05, 0.10, 0.15, 0.20]  # z semi-axis (varying)
+
+  # Optional: orientation
+  # ellipsoid_orientation:
+  #   values: ['z']  # Major axis along z (default)
+
+  # Incident wave parameters (scattering problem)
+  propagation_dir:
+    values:
+      - [0, 0, 1]  # Along z-axis (major axis)
+      - [1, 0, 0]  # Along x-axis (perpendicular)
+
+  polarization:
+    values:
+      - [1, 0, 0]  # x-polarized
+      - [0, 1, 0]  # y-polarized
+
+# Geometry configuration
+geometry:
+  R: 1.0       # Outer domain radius
+  PMLw: 0.25   # PML layer width
+  # h_max: auto-determined from wavelength
+
+# Solver configuration
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 3  # Lower order for faster computation
+  maxiter: 1000
+  tol: 1.0e-6
+
+# Output configuration
+output:
+  save_solution: false  # Don't save field solutions (saves space)
+
+# Total jobs: 3 (axis_a) × 1 (axis_b) × 4 (axis_c) × 2 (prop_dir) × 2 (pol) = 48 jobs

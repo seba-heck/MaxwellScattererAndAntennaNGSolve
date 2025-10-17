@@ -1,0 +1,50 @@
+# Spheroid Geometry Parametric Sweep
+# Studies scattering from spheroidal objects (prolate and oblate)
+
+sweep_name: "spheroid_aspect_ratio_study"
+
+# Physical parameters
+parameters:
+  wavelength:
+    values: [0.65]  # 461 MHz
+
+  # Spheroid geometry parameters (ellipsoid of revolution)
+  spheroid_equatorial_radius:
+    values: [0.08]  # Radius in x-y plane (a = b), constant
+
+  spheroid_polar_radius:
+    values: [0.04, 0.08, 0.12, 0.16, 0.20]  # Radius along z-axis (c)
+    # 0.04: oblate (c/a = 0.5, pancake)
+    # 0.08: sphere (c/a = 1.0)
+    # 0.12: prolate (c/a = 1.5)
+    # 0.16: prolate (c/a = 2.0)
+    # 0.20: prolate (c/a = 2.5, cigar)
+
+  # Incident wave parameters (scattering problem)
+  propagation_dir:
+    values:
+      - [0, 0, 1]  # Along symmetry axis (z)
+      - [1, 0, 0]  # Perpendicular to symmetry axis
+
+  polarization:
+    values:
+      - [1, 0, 0]
+
+# Geometry configuration
+geometry:
+  R: 1.0       # Outer domain radius
+  PMLw: 0.25   # PML layer width
+
+# Solver configuration
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 3
+  maxiter: 1000
+  tol: 1.0e-6
+
+# Output configuration
+output:
+  save_solution: false
+
+# Total jobs: 1 (equatorial) × 5 (polar) × 2 (prop_dir) × 1 (pol) = 10 jobs

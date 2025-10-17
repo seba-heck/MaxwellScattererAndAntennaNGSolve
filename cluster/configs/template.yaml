@@ -1,0 +1,53 @@
+# MaxwellScattererAndAntennaNGSolve Parameter Sweep Configuration
+
+sweep_name: "example_sweep"
+output_dir: "results/example_sweep"
+
+geometry:
+  type: "spherical"
+  R: 1.0
+  r: 0.1
+  PMLw: 0.25
+  h_max: 0.5
+  curve_order: 5
+
+parameters:
+  wavelength:
+    values: [0.5, 0.65, 0.8, 1.0]
+
+  propagation_dir:
+    values:
+      - [0, 0, 1]
+      - [1, 0, 0]
+
+  polarization:
+    values:
+      - [1, 0, 0]
+      - [0, 1, 0]
+
+# Total jobs: 4 × 2 × 2 = 16
+
+solver:
+  method: "gmres"
+  preconditioner: "block_jacobi"
+  maxiter: 1000
+  tol: 1.0e-6
+  fes_order: 5
+
+output:
+  save_solution: false
+  save_metadata: true
+  save_timings: true
+
+resources:
+  cpus: 32
+  mem_per_cpu: "10G"
+  time: "01:00:00"
+  partition: "normal"
+
+environment:
+  venv_path: "$HOME/.venvs/ngs311"
+  modules:
+    - "stack/2024-06"
+    - "gcc/12.2.0"
+    - "python/3.11.6"

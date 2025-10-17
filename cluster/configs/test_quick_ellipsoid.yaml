@@ -1,0 +1,44 @@
+# Quick Test: Ellipsoid Geometry with Fast Convergence
+# Large wavelength, coarse mesh, low order for rapid testing
+
+sweep_name: "test_quick_ellipsoid"
+
+parameters:
+  wavelength:
+    values: [2.0]  # Large wavelength (150 MHz) for coarser mesh
+
+  # Small ellipsoid (relative to wavelength)
+  ellipsoid_semi_axis_a:
+    values: [0.2]  # 0.1λ
+
+  ellipsoid_semi_axis_b:
+    values: [0.2]  # 0.1λ
+
+  ellipsoid_semi_axis_c:
+    values: [0.4]  # 0.2λ (prolate)
+
+  # Scattering problem
+  propagation_dir:
+    values:
+      - [0, 0, 1]
+
+  polarization:
+    values:
+      - [1, 0, 0]
+
+geometry:
+  R: 3.0         # 1.5λ outer radius
+  PMLw: 0.5      # 0.25λ PML width
+  h_max: 0.4     # λ/5 coarse mesh
+
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 2   # Low order for fast solve
+  maxiter: 500
+  tol: 1.0e-5    # Relaxed tolerance
+
+output:
+  save_solution: false
+
+# Total: 1 job (very fast, ~3-5 seconds expected)

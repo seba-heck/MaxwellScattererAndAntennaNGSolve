@@ -1,0 +1,46 @@
+{
+  "job_id": 0,
+  "problem_type": "scattering",
+  "parameters": {
+    "wavelength": 0.5,
+    "wavenumber": 12.566370614359172,
+    "polarization": [
+      1,
+      0,
+      0
+    ],
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.2,
+      "h_max": 1.0,
+      "curve_order": 2
+    }
+  },
+  "solver": {
+    "method": "gmres",
+    "preconditioner": "block_jacobi",
+    "fes_order": 2
+  },
+  "mesh": {
+    "elements": 2531,
+    "vertices": 504,
+    "ndof": 25077,
+    "free_dofs": 23847
+  },
+  "timings": {
+    "mesh_gen": 0.17624319099923014,
+    "source_setup": 0.0006041889973857906,
+    "assembly": 0.008297691998450318,
+    "solve": 2.489442638001492,
+    "total": 2.6745877099965583
+  },
+  "resources": {
+    "cpus": 2
+  },
+  "environment": {
+    "is_slurm": false,
+    "slurm_job_id": "N/A"
+  }
+}

@@ -1,0 +1,66 @@
+[
+  {
+    "job_id": 0,
+    "parameters": {
+      "wavelength": 0.65,
+      "polarization": [
+        1,
+        0,
+        0
+      ],
+      "amplitude": 1.0
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.8,
+      "curve_order": 3
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 500,
+      "tol": 1e-06,
+      "fes_order": 3
+    },
+    "output": {
+      "save_solution": false,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 1,
+    "parameters": {
+      "wavelength": 0.75,
+      "polarization": [
+        1,
+        0,
+        0
+      ],
+      "amplitude": 1.0
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.8,
+      "curve_order": 3
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 500,
+      "tol": 1e-06,
+      "fes_order": 3
+    },
+    "output": {
+      "save_solution": false,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  }
+]

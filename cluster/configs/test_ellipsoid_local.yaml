@@ -1,0 +1,44 @@
+# Quick Local Test: Ellipsoid Geometry
+# Small test for validating ellipsoid geometry integration
+
+sweep_name: "test_ellipsoid_local"
+
+parameters:
+  wavelength:
+    values: [0.65]
+
+  # Small ellipsoid for fast testing
+  ellipsoid_semi_axis_a:
+    values: [0.05]
+
+  ellipsoid_semi_axis_b:
+    values: [0.08]
+
+  ellipsoid_semi_axis_c:
+    values: [0.12]
+
+  # Scattering problem
+  propagation_dir:
+    values:
+      - [0, 0, 1]
+
+  polarization:
+    values:
+      - [1, 0, 0]
+
+geometry:
+  R: 1.0
+  PMLw: 0.25
+  h_max: 0.2  # Coarse mesh for fast testing
+
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 3
+  maxiter: 500
+  tol: 1.0e-6
+
+output:
+  save_solution: false
+
+# Total: 1 job (perfect for quick local test)

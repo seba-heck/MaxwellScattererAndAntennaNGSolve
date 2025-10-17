@@ -1,0 +1,50 @@
+{
+  "job_id": 0,
+  "parameters": {
+    "wavelength": 0.5,
+    "wavenumber": 12.566370614359172,
+    "propagation_dir": [
+      0,
+      0,
+      1
+    ],
+    "polarization": [
+      1,
+      0,
+      0
+    ],
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.2,
+      "h_max": 1.0,
+      "curve_order": 2
+    }
+  },
+  "solver": {
+    "method": "gmres",
+    "preconditioner": "block_jacobi",
+    "fes_order": 2
+  },
+  "mesh": {
+    "elements": 2531,
+    "vertices": 504,
+    "ndof": 25077,
+    "free_dofs": 23847
+  },
+  "timings": {
+    "mesh_gen": 0.43309067399968626,
+    "wave_setup": 0.004338263999670744,
+    "assembly": 0.015176623001025291,
+    "solve": 3.091384475999803,
+    "total": 3.543990037000185
+  },
+  "resources": {
+    "cpus": 2
+  },
+  "environment": {
+    "is_slurm": false,
+    "slurm_job_id": "N/A"
+  }
+}

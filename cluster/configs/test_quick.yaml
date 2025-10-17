@@ -1,0 +1,49 @@
+# Ultra-quick test configuration
+# Very coarse mesh, minimal parameters for rapid testing
+
+sweep_name: "test_quick"
+output_dir: "results/test_quick"
+
+geometry:
+  type: "spherical"
+  R: 1.0
+  r: 0.1
+  PMLw: 0.2       # Thinner PML
+  h_max: 1.0      # Very coarse mesh
+  curve_order: 2  # Minimal curvature
+
+parameters:
+  wavelength:
+    values: [0.5]   # Single wavelength, large k
+
+  propagation_dir:
+    values:
+      - [0, 0, 1]   # Single direction
+
+  polarization:
+    values:
+      - [1, 0, 0]   # Single polarization
+
+# Total: 1 × 1 × 1 = 1 job (minimal test)
+
+solver:
+  method: "gmres"
+  preconditioner: "block_jacobi"
+  maxiter: 200
+  tol: 1.0e-5     # Relaxed tolerance
+  fes_order: 2    # Low order for speed
+
+output:
+  save_solution: false
+  save_metadata: true
+  save_timings: true
+
+resources:
+  cpus: 2         # Minimal threads
+  mem_per_cpu: "2G"
+  time: "00:05:00"
+  partition: "normal"
+
+environment:
+  venv_path: ""
+  modules: []

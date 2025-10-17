@@ -1,0 +1,44 @@
+# Test VTK Export: Quick ellipsoid with VTK output
+# Tests the new VTK export functionality
+
+sweep_name: "test_vtk_export"
+
+parameters:
+  wavelength:
+    values: [2.0]  # Large wavelength for fast convergence
+
+  # Small ellipsoid
+  ellipsoid_semi_axis_a:
+    values: [0.2]
+
+  ellipsoid_semi_axis_b:
+    values: [0.2]
+
+  ellipsoid_semi_axis_c:
+    values: [0.4]
+
+  # Scattering problem
+  propagation_dir:
+    values:
+      - [0, 0, 1]
+
+  polarization:
+    values:
+      - [1, 0, 0]
+
+geometry:
+  R: 3.0
+  PMLw: 0.5
+  h_max: 0.4     # Coarse mesh for speed
+
+solver:
+  method: 'gmres'
+  preconditioner: 'block_jacobi'
+  fes_order: 2   # Low order for speed
+  maxiter: 500
+  tol: 1.0e-5
+
+output:
+  save_solution: true  # ← Enable VTK export!
+
+# Total: 1 job (fast test with VTK output)

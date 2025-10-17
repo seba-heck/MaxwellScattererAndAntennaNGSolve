@@ -1,0 +1,38 @@
+[
+  {
+    "job_id": 0,
+    "parameters": {
+      "wavelength": 0.5,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.2,
+      "h_max": 1.0,
+      "curve_order": 2
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 200,
+      "tol": 1e-05,
+      "fes_order": 2
+    },
+    "output": {
+      "save_solution": false,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  }
+]
