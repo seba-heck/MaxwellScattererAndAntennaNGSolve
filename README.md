@@ -1,5 +1,7 @@
 # MaxwellScattererAndAntennaNGSolve
 
+⚠️ This is a fork of tellocam/MaxwellScattererAndAntennaNGSolve to modify and add some features.
+
 Electromagnetic scattering and antenna simulations using NGSolve finite element method library with HPC cluster support.
 
 ## Overview
