@@ -21,10 +21,49 @@ Physical conventions:
 from netgen.occ import (
     Pnt, gp_Dir, Axes, Vec,
     Ellipsoid, Cylinder, Sphere, Box,
-    Glue, OCCGeometry
+    Glue, OCCGeometry,Rectangle,Circle,Ellipse,WorkPlane
 )
+from netgen.meshing import MeshingParameters
 from ngsolve import Mesh
+import sys
 from typing import Optional, Tuple
+import numpy as np
+
+def setup_basic_geometry(R: float, R_pml: float, scatterer, max_mesh_size: float):
+    # Create spherical computational domain
+    outer_sphere = Sphere(Pnt(0, 0, 0), R)
+    pml_sphere = Sphere(Pnt(0, 0, 0), R_pml)
+
+    # Create vacuum region (between scatterer and PML)
+    vacuum_region = pml_sphere - scatterer
+    vacuum_region.mat("vacuum")
+    vacuum_region.maxh = max_mesh_size
+    vacuum_region.faces.col = (0.7, 0.7, 1.0)  # Light blue
+
+    # Create PML region (absorbing boundary layer)
+    pml_region = outer_sphere - pml_sphere
+    pml_region.mat("pml")
+    pml_region.maxh = max_mesh_size
+    pml_region.faces.col = (0.5, 0.5, 0.5)  # Gray
+
+    # Name the outer boundary
+    for face in outer_sphere.faces:
+        face.name = "outer"
+        face.maxh = max_mesh_size * 1.5  # Slightly coarser on outer boundary
+
+    return vacuum_region, pml_region
+
+def make_mesh_from_geometry(geometry, max_mesh_size: float, curve_order: int) -> Mesh:
+    # Generate mesh
+    occ_geo = OCCGeometry(geometry)
+    ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
+    ngmesh.SetGeometry(occ_geo)
+
+    # Convert to NGSolve mesh
+    mesh = Mesh(ngmesh)
+    mesh.Curve(curve_order)  # Higher-order geometry approximation
+
+    return mesh
 
 
 def create_ellipsoid_scatterer_geometry(
@@ -125,40 +164,119 @@ def create_ellipsoid_scatterer_geometry(
 
     # Create ellipsoid scatterer
     scatterer = Ellipsoid(axes, r1, r2, r3)
-    scatterer.faces.name = "scatterer"
+    scatterer.faces.name = "inner"
     scatterer.faces.maxh = max_mesh_size
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
-    # Create spherical computational domain
-    R = domain_radius
-    R_pml = pml_inner_radius
-
-    outer_sphere = Sphere(Pnt(0, 0, 0), R)
-    pml_sphere = Sphere(Pnt(0, 0, 0), R_pml)
-
-    # Create vacuum region (between scatterer and PML)
-    vacuum_region = pml_sphere - scatterer
-    vacuum_region.mat("vacuum")
-    vacuum_region.maxh = max_mesh_size
-    vacuum_region.faces.col = (0.7, 0.7, 1.0)  # Light blue
-
-    # Create PML region (absorbing boundary layer)
-    pml_region = outer_sphere - pml_sphere
-    pml_region.mat("pml")
-    pml_region.maxh = max_mesh_size
-    pml_region.faces.col = (0.5, 0.5, 0.5)  # Gray
-
-    # Name the outer boundary
-    for face in outer_sphere.faces:
-        face.name = "outer"
-        face.maxh = max_mesh_size * 1.5  # Slightly coarser on outer boundary
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
 
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    return mesh
+
+
+def create_box_scatterer_geometry(
+    wavelength: float,
+    axis_a: float,
+    axis_b: float,
+    axis_c: float,
+    box_radius: float = None,
+    domain_radius: float = 1.0,
+    pml_width: float = 0.25,
+    max_mesh_size: Optional[float] = None,
+    orientation: str = 'z',
+    curve_order: int = 5
+) -> Mesh:
+    """
+    Create ellipsoidal scatterer geometry with PML boundary conditions.
+
+    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
+    the x, y, z directions respectively (after applying orientation).
+
+    Geometry structure:
+    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Middle region: Vacuum (field propagation)
+    - Outer region: PML layer (absorbing boundary)
+
+    Args:
+        wavelength: Wavelength in meters (for mesh sizing reference)
+        semi_axis_a: Semi-axis length along first direction (meters)
+        semi_axis_b: Semi-axis length along second direction (meters)
+        semi_axis_c: Semi-axis length along third direction (meters)
+        domain_radius: Outer sphere radius (meters)
+        pml_width: PML layer thickness (meters)
+        max_mesh_size: Maximum element size (meters). Default: wavelength/15
+        orientation: Major axis orientation ('x', 'y', or 'z')
+        curve_order: Mesh curve order (higher = better geometry approximation)
+
+    Returns:
+        NGSolve Mesh object with labeled regions and boundaries
+    """
+    # Set default mesh size (10-15 elements per wavelength)
+    if max_mesh_size is None:
+        max_mesh_size = wavelength / 15.0
+
+    # Validate parameters
+    if pml_width >= domain_radius:
+        raise ValueError(f"PML width ({pml_width}) must be less than domain radius ({domain_radius})")
+
+    max_scatterer_dim = max(axis_a, axis_b, axis_c)
+    pml_inner_radius = domain_radius - pml_width
+
+    if box_radius is None:
+        box_radius = max_scatterer_dim / 4
+    
+    if max_scatterer_dim >= pml_inner_radius:
+        raise ValueError(
+            f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
+            f"PML inner radius ({pml_inner_radius:.3f})"
+        )
+
+    # Create coordinate system based on orientation
+    # center = Pnt(0, 0, 0)
+    # axes = Axes(center, n=gp_Dir(0, 0, 1), h=gp_Dir(1, 0, 0))
+
+    # Create box scatterer
+    if box_radius == 0.0:
+        scatterer = Box(Pnt(-axis_a/2,-axis_b/2,-axis_c/2),
+                        Pnt( axis_a/2, axis_b/2, axis_c/2))
+    else:
+        rect = Rectangle(axis_a,axis_b).Face()
+        body = rect.Extrude(axis_c)
+        scatterer = body.MakeFillet(body.edges, box_radius).Move((-axis_a/2,-axis_b/2,-axis_c/2))
+    scatterer.faces.name = "inner"
+    scatterer.faces.maxh = max_mesh_size / 4
+    scatterer.faces.col = (1, 0, 0)  # Red for scatterer
+
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+
+    # Combine regions
+    geometry = Glue([vacuum_region, pml_region])
+
+    # mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    edges = set([tuple(sorted([(e.start.x, e.start.y, e.start.z), (e.end.x, e.end.y, e.end.z)])) for e in scatterer.edges])
+    n_points = 20
+    mp = MeshingParameters(maxh=max_mesh_size)
+
+    for p_start,p_end in edges:
+        
+        v = [_e - _s for _e,_s in zip(p_end,p_start)]
+        steps = [_i/n_points for _i in range(n_points+1)]
+
+        for _m in steps:
+            x,y,z = [_p + _m*_v for _p,_v in zip(p_start,v)]
+            mp.RestrictH(x, y, z, h=max_mesh_size/10)    
+
     # Generate mesh
     occ_geo = OCCGeometry(geometry)
-    ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
+    ngmesh = occ_geo.GenerateMesh(mp=mp)
+    # ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
     ngmesh.SetGeometry(occ_geo)
 
     # Convert to NGSolve mesh
@@ -167,6 +285,285 @@ def create_ellipsoid_scatterer_geometry(
 
     return mesh
 
+def create_cylinder_scatterer_geometry(
+    wavelength: float,
+    origin: tuple,
+    height: float,
+    radius: float,
+    box_radius: float,
+    radius_2: float = None,
+    direction: tuple = (0,0,1),
+    domain_radius: float = 1.0,
+    pml_width: float = 0.25,
+    max_mesh_size: Optional[float] = None,
+    curve_order: int = 5
+) -> Mesh:
+    """
+    Create ellipsoidal scatterer geometry with PML boundary conditions.
+
+    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
+    the x, y, z directions respectively (after applying orientation).
+
+    Geometry structure:
+    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Middle region: Vacuum (field propagation)
+    - Outer region: PML layer (absorbing boundary)
+
+    Args:
+        wavelength: Wavelength in meters (for mesh sizing reference)
+        semi_axis_a: Semi-axis length along first direction (meters)
+        semi_axis_b: Semi-axis length along second direction (meters)
+        semi_axis_c: Semi-axis length along third direction (meters)
+        domain_radius: Outer sphere radius (meters)
+        pml_width: PML layer thickness (meters)
+        max_mesh_size: Maximum element size (meters). Default: wavelength/15
+        orientation: Major axis orientation ('x', 'y', or 'z')
+        curve_order: Mesh curve order (higher = better geometry approximation)
+
+    Returns:
+        NGSolve Mesh object with labeled regions and boundaries
+    """
+    # Set default mesh size (10-15 elements per wavelength)
+    if max_mesh_size is None:
+        max_mesh_size = wavelength / 15.0
+
+    # Validate parameters
+    if pml_width >= domain_radius:
+        raise ValueError(f"PML width ({pml_width}) must be less than domain radius ({domain_radius})")
+
+    # max_scatterer_dim = max(axis_a, axis_b, axis_c)
+    pml_inner_radius = domain_radius - pml_width
+    
+    # if max_scatterer_dim >= pml_inner_radius:
+    #     raise ValueError(
+    #         f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
+    #         f"PML inner radius ({pml_inner_radius:.3f})"
+    #     )
+
+    # Create coordinate system based on orientation
+
+    # Create box scatterer
+    if box_radius == 0.0:
+        origin_ = Pnt(origin[0],origin[1],origin[2]-height/2)
+        scatterer = Cylinder(origin_, direction, r=radius, h=height)
+    else:
+        origin_ = Pnt(origin[0],origin[1])
+        if radius_2 is None:
+            rect = Circle(origin_, radius).Face()
+        else:
+            wpplate = WorkPlane(Axes())
+            rect = wpplate.Ellipse(radius, radius_2).Face()
+        body = rect.Extrude(height)
+        # Try fillet with decreasing radii; if it fails, fall back to no fillet.
+        scatterer_body = None
+        try:
+            if len(body.edges) == 0:
+                raise RuntimeError("No edges to fillet")
+            scatterer_body = body.MakeFillet(body.edges, box_radius)
+        except Exception as e:
+            # Retry with smaller radii
+            fillet_radius = float(box_radius)
+            for attempt in range(5):
+                fillet_radius *= 0.5
+                if fillet_radius <= 1e-6:
+                    break
+                try:
+                    scatterer_body = body.MakeFillet(body.edges, fillet_radius)
+                    break
+                except Exception:
+                    continue
+            if scatterer_body is None:
+                print(f"Warning: fillet failed ({e}); proceeding without fillet.", file=sys.stderr)
+                scatterer_body = body
+        scatterer = scatterer_body.Move((0,0,-height/2))
+    scatterer.faces.name = "inner"
+
+    scatterer.faces.maxh = max_mesh_size / 4
+    scatterer.faces.col = (1, 0, 0)  # Red for scatterer
+
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+
+    # Combine regions
+    geometry = Glue([vacuum_region, pml_region])
+
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    return mesh
+
+def create_two_box_scatterer_geometry(
+    wavelength: float,
+    dist: float,
+    b1_axis_a: float,
+    b1_axis_b: float,
+    b1_axis_c: float,
+    b2_axis_a: float,
+    b2_axis_b: float,
+    b2_axis_c: float,
+    box_radius: float = None,
+    domain_radius: float = 1.0,
+    pml_width: float = 0.25,
+    max_mesh_size: Optional[float] = None,
+    orientation: str = 'z',
+    curve_order: int = 5
+) -> Mesh:
+    """
+    Create ellipsoidal scatterer geometry with PML boundary conditions.
+
+    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
+    the x, y, z directions respectively (after applying orientation).
+
+    Geometry structure:
+    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Middle region: Vacuum (field propagation)
+    - Outer region: PML layer (absorbing boundary)
+
+    Args:
+        wavelength: Wavelength in meters (for mesh sizing reference)
+        semi_axis_a: Semi-axis length along first direction (meters)
+        semi_axis_b: Semi-axis length along second direction (meters)
+        semi_axis_c: Semi-axis length along third direction (meters)
+        domain_radius: Outer sphere radius (meters)
+        pml_width: PML layer thickness (meters)
+        max_mesh_size: Maximum element size (meters). Default: wavelength/15
+        orientation: Major axis orientation ('x', 'y', or 'z')
+        curve_order: Mesh curve order (higher = better geometry approximation)
+
+    Returns:
+        NGSolve Mesh object with labeled regions and boundaries
+    """
+    # Set default mesh size (10-15 elements per wavelength)
+    if max_mesh_size is None:
+        max_mesh_size = wavelength / 15.0
+
+    # Validate parameters
+    if pml_width >= domain_radius:
+        raise ValueError(f"PML width ({pml_width}) must be less than domain radius ({domain_radius})")
+
+    max_scatterer_dim = max(b1_axis_a, b1_axis_b, b1_axis_c)
+    pml_inner_radius = domain_radius - pml_width
+
+    if box_radius is None:
+        box_radius = max_scatterer_dim / 4
+    
+    if max_scatterer_dim >= pml_inner_radius:
+        raise ValueError(
+            f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
+            f"PML inner radius ({pml_inner_radius:.3f})"
+        )
+
+    # Create coordinate system based on orientation
+    center = Pnt(0, 0, 0)
+    axes = Axes(center, n=gp_Dir(0, 0, 1), h=gp_Dir(1, 0, 0))
+
+    # Create box scatterer
+    rect = Rectangle(b1_axis_a,b1_axis_b).Face()
+    body = rect.Extrude(b1_axis_c)
+    box1 = body.MakeFillet(body.edges, box_radius).Move((-b1_axis_a/2-dist/2,-b1_axis_b/2,-b1_axis_c/2))
+
+    # Create second box
+    rect2 = Rectangle(b2_axis_a,b2_axis_b).Face()
+    body2 = rect2.Extrude(b2_axis_c)
+    box2 = body2.MakeFillet(body2.edges, box_radius).Move((-b2_axis_a/2+dist/2,-b2_axis_b/2,-b2_axis_c/2))
+
+    scatterer = box1 + box2
+    scatterer.faces.name = "inner"
+    scatterer.faces.maxh = max_mesh_size / 4
+    scatterer.faces.col = (1, 0, 0)  # Red for scatterer
+
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+
+    # Combine regions
+    geometry = Glue([vacuum_region, pml_region])
+
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    return mesh
+
+def create_two_ellipsoid_scatterer_geometry(
+    wavelength: float,
+    dist: float,
+    b1_axis_a: float,
+    b1_axis_b: float,
+    b1_axis_c: float,
+    b2_axis_a: float,
+    b2_axis_b: float,
+    b2_axis_c: float,
+    box_radius: float = None,
+    domain_radius: float = 1.0,
+    pml_width: float = 0.25,
+    max_mesh_size: Optional[float] = None,
+    orientation: str = 'z',
+    curve_order: int = 5
+) -> Mesh:
+    """
+    Create ellipsoidal scatterer geometry with PML boundary conditions.
+
+    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
+    the x, y, z directions respectively (after applying orientation).
+
+    Geometry structure:
+    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Middle region: Vacuum (field propagation)
+    - Outer region: PML layer (absorbing boundary)
+
+    Args:
+        wavelength: Wavelength in meters (for mesh sizing reference)
+        semi_axis_a: Semi-axis length along first direction (meters)
+        semi_axis_b: Semi-axis length along second direction (meters)
+        semi_axis_c: Semi-axis length along third direction (meters)
+        domain_radius: Outer sphere radius (meters)
+        pml_width: PML layer thickness (meters)
+        max_mesh_size: Maximum element size (meters). Default: wavelength/15
+        orientation: Major axis orientation ('x', 'y', or 'z')
+        curve_order: Mesh curve order (higher = better geometry approximation)
+
+    Returns:
+        NGSolve Mesh object with labeled regions and boundaries
+    """
+    # Set default mesh size (10-15 elements per wavelength)
+    if max_mesh_size is None:
+        max_mesh_size = wavelength / 15.0
+
+    # Validate parameters
+    if pml_width >= domain_radius:
+        raise ValueError(f"PML width ({pml_width}) must be less than domain radius ({domain_radius})")
+
+    max_scatterer_dim = max(b1_axis_a, b1_axis_b, b1_axis_c)
+    pml_inner_radius = domain_radius - pml_width
+
+    if box_radius is None:
+        box_radius = max_scatterer_dim / 4
+    
+    if max_scatterer_dim >= pml_inner_radius:
+        raise ValueError(
+            f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
+            f"PML inner radius ({pml_inner_radius:.3f})"
+        )
+
+    # Create coordinate system based on orientation
+    center = Pnt(0, 0, 0)
+    axes = Axes(center)
+    # axes = Axes(center, n=gp_Dir(1, 0, 0), h=gp_Dir(0, 1, 0))
+
+    # Create ellipsoid scatterer
+    box1 = Ellipsoid(axes, b1_axis_a, b1_axis_b, b1_axis_c).Move((-b1_axis_b-dist/2,0,0))
+    box2 = Ellipsoid(axes, b2_axis_a, b2_axis_b, b2_axis_c).Move((b2_axis_b+dist/2,0,0))
+    scatterer = box1 + box2
+    scatterer.faces.name = "inner"
+    scatterer.faces.maxh = max_mesh_size
+    scatterer.faces.col = (1, 0, 0)  # Red for scatterer
+
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+
+    # Combine regions
+    geometry = Glue([vacuum_region, pml_region])
+
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    return mesh
 
 def create_spheroid_scatterer_geometry(
     wavelength: float,
@@ -316,41 +713,13 @@ def create_dipole_antenna_geometry(
     dipole.faces.maxh = max_mesh_size * 0.5  # Finer mesh on antenna surface
     dipole.faces.col = (0, 0, 1)  # Blue for antenna
 
-    # Create spherical computational domain
-    R = domain_radius
-    R_pml = pml_inner_radius
-
-    outer_sphere = Sphere(Pnt(0, 0, 0), R)
-    pml_sphere = Sphere(Pnt(0, 0, 0), R_pml)
-
-    # Create vacuum region (between antenna and PML)
-    vacuum_region = pml_sphere - dipole
-    vacuum_region.mat("vacuum")
-    vacuum_region.maxh = max_mesh_size
-    vacuum_region.faces.col = (0.7, 0.7, 1.0)  # Light blue
-
-    # Create PML region (absorbing boundary layer)
-    pml_region = outer_sphere - pml_sphere
-    pml_region.mat("pml")
-    pml_region.maxh = max_mesh_size
-    pml_region.faces.col = (0.5, 0.5, 0.5)  # Gray
-
-    # Name the outer boundary
-    for face in outer_sphere.faces:
-        face.name = "outer"
-        face.maxh = max_mesh_size * 1.5  # Slightly coarser on outer boundary
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
 
-    # Generate mesh
-    occ_geo = OCCGeometry(geometry)
-    ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
-    ngmesh.SetGeometry(occ_geo)
-
-    # Convert to NGSolve mesh
-    mesh = Mesh(ngmesh)
-    mesh.Curve(curve_order)  # Higher-order geometry approximation
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
 
     return mesh
 

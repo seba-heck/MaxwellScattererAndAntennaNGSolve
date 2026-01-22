@@ -121,6 +121,7 @@ class MaxwellProblem:
         # Volume terms: ∫ (∇×E)·(∇×E') - k²E·E' dΩ
         self.a += curl(E) * curl(Ep) * dx
         self.a += -self.k**2 * Ep * E * dx
+        # self.a += 1e-3 * Ep * E * dx # regularization
 
         # Impedance boundary condition on inner surface
         # ∫_Γ -ik (n×E)·(n×E') dΓ

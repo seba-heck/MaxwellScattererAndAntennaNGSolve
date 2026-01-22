@@ -57,6 +57,11 @@ from .geometry import (
     create_spheroid_scatterer_geometry,
     create_dipole_antenna_geometry,
     create_spherical_geometry,
+
+    create_box_scatterer_geometry,
+    create_two_box_scatterer_geometry,
+    create_two_ellipsoid_scatterer_geometry,
+    create_cylinder_scatterer_geometry,
 )
 
 from .scatterer import ScattererProblem
@@ -68,6 +73,8 @@ from .maxwell import MaxwellProblem
 from .solvers import (
     solve_direct,
     solve_gmres,
+    solve_cg,
+    solve_bvp,
     solve_with_taskmanager,
     create_preconditioner,
     IterativeSolver,
@@ -84,6 +91,11 @@ __all__ = [
     "create_spheroid_scatterer_geometry",
     "create_dipole_antenna_geometry",
     "create_spherical_geometry",
+
+    "create_box_scatterer_geometry",
+    "create_two_box_scatterer_geometry",
+    "create_two_ellipsoid_scatterer_geometry",
+    "create_cylinder_scatterer_geometry",
 
     # Utilities
     "create_incident_wave",
@@ -102,6 +114,8 @@ __all__ = [
     # Solvers
     "solve_direct",
     "solve_gmres",
+    "solve_cg",
+    "solve_bvp",
     "solve_with_taskmanager",
     "create_preconditioner",
     "IterativeSolver",

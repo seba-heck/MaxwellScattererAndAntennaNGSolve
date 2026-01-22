@@ -96,7 +96,7 @@ def create_preconditioner(
 
     elif prec_type == "bddc":
         # BDDC preconditioner
-        pre = Preconditioner(bilinear_form, "bddc")
+        pre = Preconditioner(bilinear_form, type="bddc")
         return pre
 
     elif prec_type == "hcurlamg":
@@ -177,6 +177,122 @@ def solve_gmres(
 
     return gfu
 
+def solve_cg(
+    bilinear_form: BilinearForm,
+    linear_form: LinearForm,
+    fes,
+    preconditioner: str = "block_jacobi",
+    maxsteps: int = 1000,
+    tol: float = 1e-6,
+    printrates: bool = True,
+    **kwargs
+) -> GridFunction:
+    """
+    Solve the linear system using GMRes iterative solver.
+
+    GMRes (Generalized Minimal Residual) is an iterative Krylov subspace
+    method suitable for large sparse non-symmetric systems.
+
+    Args:
+        bilinear_form: Assembled bilinear form
+        linear_form: Assembled linear form
+        fes: Finite element space
+        preconditioner: Preconditioner type ("block_jacobi", "bddc", "hcurlamg")
+        maxsteps: Maximum number of iterations (default: 1000)
+        tol: Convergence tolerance (default: 1e-6)
+        printrates: Print convergence rates (default: True)
+        **kwargs: Additional arguments passed to GMRes solver
+
+    Returns:
+        GridFunction containing the solution
+
+    Example:
+        >>> solution = solve_gmres(a, l, fes, preconditioner="block_jacobi", maxsteps=1000)
+    """
+    print(f"Solving with CGSolver (preconditioner: {preconditioner})...")
+
+    # Assemble system
+    bilinear_form.Assemble()
+    linear_form.Assemble()
+
+    # Create solution GridFunction
+    gfu = GridFunction(fes)
+
+    # Create preconditioner
+    pre = create_preconditioner(bilinear_form, fes, prec_type=preconditioner)
+
+    # Prepare printrates parameter
+    if printrates:
+        printrates_param = "\r"  # Carriage return for live updates
+    else:
+        printrates_param = False
+
+    # Compute residual
+    res = linear_form.vec - bilinear_form.mat * gfu.vec
+
+    # Direct solve using sparse Cholesky factorization
+    inv = solvers.CGSolver(mat=bilinear_form.mat, pre=pre, printrates=printrates_param, maxiter=maxsteps, tol=tol)
+
+    # Update solution
+    gfu.vec.data += inv * res
+
+    return gfu
+
+
+def solve_bvp(
+    bilinear_form: BilinearForm,
+    linear_form: LinearForm,
+    fes,
+    preconditioner: str = "block_jacobi",
+    maxsteps: int = 1000,
+    tol: float = 1e-6,
+    printrates: bool = True,
+    **kwargs
+) -> GridFunction:
+    """
+    Solve the linear system using GMRes iterative solver.
+
+    GMRes (Generalized Minimal Residual) is an iterative Krylov subspace
+    method suitable for large sparse non-symmetric systems.
+
+    Args:
+        bilinear_form: Assembled bilinear form
+        linear_form: Assembled linear form
+        fes: Finite element space
+        preconditioner: Preconditioner type ("block_jacobi", "bddc", "hcurlamg")
+        maxsteps: Maximum number of iterations (default: 1000)
+        tol: Convergence tolerance (default: 1e-6)
+        printrates: Print convergence rates (default: True)
+        **kwargs: Additional arguments passed to GMRes solver
+
+    Returns:
+        GridFunction containing the solution
+
+    Example:
+        >>> solution = solve_gmres(a, l, fes, preconditioner="block_jacobi", maxsteps=1000)
+    """
+    print(f"Solving with BVP (preconditioner: {preconditioner})...")
+
+    # Assemble system
+    bilinear_form.Assemble()
+    linear_form.Assemble()
+
+    # Create solution GridFunction
+    gfu = GridFunction(fes)
+
+    # Create preconditioner
+    pre = create_preconditioner(bilinear_form, fes, prec_type=preconditioner)
+
+    # Prepare printrates parameter
+    if printrates:
+        printrates_param = "\r"  # Carriage return for live updates
+    else:
+        printrates_param = False
+
+    solvers.BVP(bf=bilinear_form, lf=linear_form, gf=gfu, pre=pre, \
+                solver=solvers.CGSolver, solver_flags={"printrates":printrates_param, "tol" : tol, "maxiter": maxsteps})
+    
+    return gfu
 
 def solve_with_taskmanager(
     bilinear_form: BilinearForm,
