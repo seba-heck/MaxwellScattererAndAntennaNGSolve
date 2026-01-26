@@ -1,0 +1,434 @@
+[
+  {
+    "job_id": 0,
+    "parameters": {
+      "wavelength": 0.5,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.5,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 1,
+    "parameters": {
+      "wavelength": 0.65,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.5,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 2,
+    "parameters": {
+      "wavelength": 1.0,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.5,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 3,
+    "parameters": {
+      "wavelength": 0.5,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.25,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 4,
+    "parameters": {
+      "wavelength": 0.65,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.25,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 5,
+    "parameters": {
+      "wavelength": 1.0,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.25,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 6,
+    "parameters": {
+      "wavelength": 0.5,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.1,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 7,
+    "parameters": {
+      "wavelength": 0.65,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.1,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 8,
+    "parameters": {
+      "wavelength": 1.0,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.1,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 9,
+    "parameters": {
+      "wavelength": 0.5,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.05,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 10,
+    "parameters": {
+      "wavelength": 0.65,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.05,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  },
+  {
+    "job_id": 11,
+    "parameters": {
+      "wavelength": 1.0,
+      "propagation_dir": [
+        0,
+        0,
+        1
+      ],
+      "polarization": [
+        1,
+        0,
+        0
+      ]
+    },
+    "geometry": {
+      "type": "spherical",
+      "R": 1.0,
+      "r": 0.1,
+      "PMLw": 0.25,
+      "h_max": 0.05,
+      "curve_order": 5
+    },
+    "solver": {
+      "method": "gmres",
+      "preconditioner": "block_jacobi",
+      "maxiter": 1000,
+      "tol": 1e-06,
+      "fes_order": 5
+    },
+    "output": {
+      "save_solution": true,
+      "save_metadata": true,
+      "save_timings": true
+    }
+  }
+]
