@@ -25,13 +25,13 @@ from src import (
 )
 
 # PARAMETERS
-wavelength = 1.6
+wavelength = 0.4
 prop_dir = [0,0,1]
 polarization = [1,0,0]
 scatterer_radius = 0.1
-outer_radius = 1.5
+outer_radius = 1.0
 pml_width = 0.25
-mesh_size = 0.5
+mesh_size = 0.1
 order = 5
 solver = "gmres"  # options: gmres, bvp, cg, direct
 num_threads = 4
@@ -56,18 +56,18 @@ if False:
         r=scatterer_radius,
         h_max=mesh_size
     )
-if False:
+if True:
     mesh = create_ellipsoid_scatterer_geometry(
         wavelength=wavelength,
         semi_axis_a=0.5,
-        semi_axis_b=0.4,
-        semi_axis_c=0.3,
+        semi_axis_b=0.25,
+        semi_axis_c=0.1,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
         curve_order=order
     )
-if True:
+if False:
     mesh = create_box_scatterer_geometry(
         wavelength=wavelength,
         axis_a=0.75,
@@ -130,7 +130,7 @@ print(f"  Elements: {mesh.ne}")
 print(f"  Vertices: {mesh.nv}")
 
 clipping = { "function" : False,  "pnt" : (0,0,0.25), "vec" : (0,0,-1) }
-Draw(mesh, clipping=clipping, filename="imgs/scatterer_mesh.html")
+Draw(mesh, clipping=clipping, filename="bin/imgs/scatterer_mesh_small.html")
 
 
 """
@@ -177,7 +177,7 @@ E_inc = create_incident_wave(
     polarization=tuple(polarization)
 )
 
-Draw(E_inc,mesh, filename="imgs/scatterer_Einc.html")
+Draw(E_inc,mesh, filename="bin/imgs/scatterer_Einc_small.html")
 
 # SETUP PROBLEM
 print(f"\nSetting up scattering problem...")
@@ -192,7 +192,7 @@ solution = None
 with TaskManager():#pajetrace=10**8):
     # 'block_jacobi', 'bddc', 'hcurlamg'
     if solver == "gmres":
-        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000)
+        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000, restart=100)
     elif solver == "bvp":
         solution = solve_bvp(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000)
     elif solver == "cg":
@@ -204,7 +204,7 @@ problem.set_solution(solution)
 
 clipping = { "function" : False,  "pnt" : (0,0,0.26), "vec" : (0,0,-1) }
 vectors = {"grid_size" : 50, "offset" : 0.5 }
-Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="imgs/scatterer_solution_box.html");
+Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="bin/imgs/scatterer_solution_small.html");
 
 # CalcError(solution)
 # mesh.Refine()
