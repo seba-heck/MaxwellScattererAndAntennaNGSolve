@@ -74,6 +74,7 @@ def create_ellipsoid_scatterer_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
+    scatterer_mesh_size: Optional[float] = None,
     orientation: str = 'z',
     curve_order: int = 5
 ) -> Mesh:
@@ -165,7 +166,7 @@ def create_ellipsoid_scatterer_geometry(
     # Create ellipsoid scatterer
     scatterer = Ellipsoid(axes, r1, r2, r3)
     scatterer.faces.name = "inner"
-    scatterer.faces.maxh = max_mesh_size
+    scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
@@ -188,6 +189,7 @@ def create_box_scatterer_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
+    scatterer_mesh_size: Optional[float] = None,
     orientation: str = 'z',
     curve_order: int = 5
 ) -> Mesh:
@@ -249,7 +251,11 @@ def create_box_scatterer_geometry(
         body = rect.Extrude(axis_c)
         scatterer = body.MakeFillet(body.edges, box_radius).Move((-axis_a/2,-axis_b/2,-axis_c/2))
     scatterer.faces.name = "inner"
+<<<<<<< HEAD
     scatterer.faces.maxh = max_mesh_size
+=======
+    scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
+>>>>>>> 6c3d3ad44872fa9050bbc7e9212c93b9332a1df1
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
