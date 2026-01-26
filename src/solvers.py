@@ -46,6 +46,21 @@ def solve_direct(
     # Create solution GridFunction
     sol = GridFunction(fes)
 
+    # Create preconditioner
+    pre = create_preconditioner(bilinear_form, fes, prec_type="block_jacobi")
+
+    # Solve using GMRes
+    solvers.GMRes(
+        A=bilinear_form.mat,
+        x=sol.vec,
+        b=linear_form.vec,
+        pre=pre,
+        printrates="\r",
+        maxsteps=250,
+        tol=tol,
+        **kwargs
+    )
+
     # Compute residual
     res = linear_form.vec - bilinear_form.mat * sol.vec
 

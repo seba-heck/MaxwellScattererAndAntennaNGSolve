@@ -74,6 +74,7 @@ def create_ellipsoid_scatterer_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
+    scatterer_mesh_size: Optional[float] = None,
     orientation: str = 'z',
     curve_order: int = 5
 ) -> Mesh:
@@ -165,7 +166,7 @@ def create_ellipsoid_scatterer_geometry(
     # Create ellipsoid scatterer
     scatterer = Ellipsoid(axes, r1, r2, r3)
     scatterer.faces.name = "inner"
-    scatterer.faces.maxh = max_mesh_size
+    scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
@@ -188,6 +189,7 @@ def create_box_scatterer_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
+    scatterer_mesh_size: Optional[float] = None,
     orientation: str = 'z',
     curve_order: int = 5
 ) -> Mesh:
@@ -249,7 +251,7 @@ def create_box_scatterer_geometry(
         body = rect.Extrude(axis_c)
         scatterer = body.MakeFillet(body.edges, box_radius).Move((-axis_a/2,-axis_b/2,-axis_c/2))
     scatterer.faces.name = "inner"
-    scatterer.faces.maxh = max_mesh_size / 4
+    scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
@@ -258,30 +260,31 @@ def create_box_scatterer_geometry(
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
 
-    # mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+    if box_radius == 0.0:
+        edges = set([tuple(sorted([(e.start.x, e.start.y, e.start.z), (e.end.x, e.end.y, e.end.z)])) for e in scatterer.edges])
+        n_points = 20
+        mp = MeshingParameters(maxh=max_mesh_size)
 
-    edges = set([tuple(sorted([(e.start.x, e.start.y, e.start.z), (e.end.x, e.end.y, e.end.z)])) for e in scatterer.edges])
-    n_points = 20
-    mp = MeshingParameters(maxh=max_mesh_size)
+        for p_start,p_end in edges:
+            
+            v = [_e - _s for _e,_s in zip(p_end,p_start)]
+            steps = [_i/n_points for _i in range(n_points+1)]
 
-    for p_start,p_end in edges:
-        
-        v = [_e - _s for _e,_s in zip(p_end,p_start)]
-        steps = [_i/n_points for _i in range(n_points+1)]
+            for _m in steps:
+                x,y,z = [_p + _m*_v for _p,_v in zip(p_start,v)]
+                mp.RestrictH(x, y, z, h=max_mesh_size/10)    
 
-        for _m in steps:
-            x,y,z = [_p + _m*_v for _p,_v in zip(p_start,v)]
-            mp.RestrictH(x, y, z, h=max_mesh_size/10)    
+        # Generate mesh
+        occ_geo = OCCGeometry(geometry)
+        # ngmesh = occ_geo.GenerateMesh(mp=mp)
+        ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
+        ngmesh.SetGeometry(occ_geo)
 
-    # Generate mesh
-    occ_geo = OCCGeometry(geometry)
-    ngmesh = occ_geo.GenerateMesh(mp=mp)
-    # ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
-    ngmesh.SetGeometry(occ_geo)
-
-    # Convert to NGSolve mesh
-    mesh = Mesh(ngmesh)
-    mesh.Curve(curve_order)  # Higher-order geometry approximation
+        # Convert to NGSolve mesh
+        mesh = Mesh(ngmesh)
+        mesh.Curve(curve_order)  # Higher-order geometry approximation
+    else:
+        mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
 
     return mesh
 
