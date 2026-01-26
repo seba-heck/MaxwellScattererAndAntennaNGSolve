@@ -25,13 +25,13 @@ from src import (
 )
 
 # PARAMETERS
-wavelength = 1.6
+wavelength = 0.25
 prop_dir = [0,0,1]
 polarization = [1,0,0]
 scatterer_radius = 0.1
-outer_radius = 1.5
+outer_radius = 1.0
 pml_width = 0.25
-mesh_size = 0.5
+mesh_size = 0.05
 order = 5
 solver = "gmres"  # options: gmres, bvp, cg, direct
 num_threads = 4
@@ -46,7 +46,7 @@ print(f"  Propagation: {prop_dir}")
 print(f"  Polarization: {polarization}")
 
 # GEOMETRY
-print(f"\nCreating geometry...")
+print(f"\nCreating geometry...", flush=True)
 mesh = None
 
 if False:
@@ -56,28 +56,30 @@ if False:
         r=scatterer_radius,
         h_max=mesh_size
     )
-if False:
+if True:
     mesh = create_ellipsoid_scatterer_geometry(
         wavelength=wavelength,
-        semi_axis_a=0.5,
-        semi_axis_b=0.4,
-        semi_axis_c=0.3,
+        semi_axis_a=0.4,
+        semi_axis_b=0.3125,
+        semi_axis_c=0.25,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
+        scatterer_mesh_size=mesh_size,
         curve_order=order
     )
-if True:
+if False:
     mesh = create_box_scatterer_geometry(
         wavelength=wavelength,
-        axis_a=0.75,
-        axis_b=0.84,
-        axis_c=0.95,
+        axis_a=0.7,
+        axis_b=0.54,
+        axis_c=0.65,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
+        scatterer_mesh_size=mesh_size,
         curve_order=order,
-        box_radius=0.0
+        box_radius=0.1
     )
 if False:
     mesh = create_two_box_scatterer_geometry(
@@ -130,45 +132,45 @@ print(f"  Elements: {mesh.ne}")
 print(f"  Vertices: {mesh.nv}")
 
 clipping = { "function" : False,  "pnt" : (0,0,0.25), "vec" : (0,0,-1) }
-Draw(mesh, clipping=clipping, filename="imgs/scatterer_mesh.html")
+Draw(mesh, clipping=clipping, filename="imgs/scatterer_mesh_sph2.html")
 
 
-"""
-l = []    # l = list of estimated total error
-space_flux = HDiv(mesh,  complex=True, autoupdate=True)
-gf_flux = GridFunction(space_flux, "flux", autoupdate=True)
+# """
+# l = []    # l = list of estimated total error
+# space_flux = HDiv(mesh,  complex=True, autoupdate=True)
+# gf_flux = GridFunction(space_flux, "flux", autoupdate=True)
 
-def CalcError(gfu):
-    fes = problem.fes
+# def CalcError(gfu):
+#     fes = problem.fes
 
-    flux = curl(gfu)   # the FEM-flux      
-    gf_flux.Set(flux)        # interpolate into H(div)
+#     flux = curl(gfu)   # the FEM-flux      
+#     gf_flux.Set(flux)        # interpolate into H(div)
 
-    # compute estimator:
-    err = InnerProduct(flux-gf_flux, flux-gf_flux)
-    eta2 = Integrate(err*dx, mesh, element_wise=True)
-    l.append ((fes.ndof, sqrt(sum(eta2))))
-    print("ndof =", fes.ndof, " toterr =", sqrt(sum(eta2)))
+#     # compute estimator:
+#     err = InnerProduct(flux-gf_flux, flux-gf_flux)
+#     eta2 = Integrate(err*dx, mesh, element_wise=True)
+#     l.append ((fes.ndof, sqrt(sum(eta2))))
+#     print("ndof =", fes.ndof, " toterr =", sqrt(sum(eta2)))
 
-    # mark for refinement based on error:
-    maxerr = max(eta2.real) 
-    for el in mesh.Elements():
-       if eta2[el.nr].real > 0.25*maxerr:
-           mesh.SetRefinementFlag(el, True)
+#     # mark for refinement based on error:
+#     maxerr = max(eta2.real) 
+#     for el in mesh.Elements():
+#        if eta2[el.nr].real > 0.25*maxerr:
+#            mesh.SetRefinementFlag(el, True)
 
-    # additional refinement at material interfaces (box edges):
-    for el in mesh.Elements():
-        for f in el.faces:
-            if len(f.elements) == 2:  # internal face
-                mat1 = f.elements[0].mat
-                mat2 = f.elements[1].mat
-                if mat1 != mat2:
-                    mesh.SetRefinementFlag(el, True)
-                    break
+#     # additional refinement at material interfaces (box edges):
+#     for el in mesh.Elements():
+#         for f in el.faces:
+#             if len(f.elements) == 2:  # internal face
+#                 mat1 = f.elements[0].mat
+#                 mat2 = f.elements[1].mat
+#                 if mat1 != mat2:
+#                     mesh.SetRefinementFlag(el, True)
+#                     break
 
-    clipping = { "function" : False,  "pnt" : (0,0,0.25), "vec" : (0,0,-1) }
-    Draw(err, mesh, clipping=clipping);
-"""
+#     clipping = { "function" : False,  "pnt" : (0,0,0.25), "vec" : (0,0,-1) }
+#     Draw(err, mesh, clipping=clipping);
+# """
 
 # INCIDENT WAVE
 E_inc = create_incident_wave(
@@ -177,13 +179,13 @@ E_inc = create_incident_wave(
     polarization=tuple(polarization)
 )
 
-Draw(E_inc,mesh, filename="imgs/scatterer_Einc.html")
+Draw(E_inc,mesh, filename="imgs/scatterer_Einc_sph2.html")
 
 # SETUP PROBLEM
-print(f"\nSetting up scattering problem...")
+print(f"\nSetting up scattering problem...", flush=True)
 problem = MaxwellProblem(mesh, k, E_inc, fes_order=order)
 
-print(f"\nAssembling system...")
+print(f"\nAssembling system...", flush=True)
 problem.assemble_system()
 
 # SOLVE
@@ -204,7 +206,7 @@ problem.set_solution(solution)
 
 clipping = { "function" : False,  "pnt" : (0,0,0.26), "vec" : (0,0,-1) }
 vectors = {"grid_size" : 50, "offset" : 0.5 }
-Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="imgs/scatterer_solution_box.html");
+Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="imgs/scatterer_solution_sph2.html");
 
 # CalcError(solution)
 # mesh.Refine()
