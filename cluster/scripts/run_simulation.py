@@ -25,6 +25,7 @@ from typing import Dict, Any
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from ngsolve import TaskManager, SetNumThreads, pi
+from ngsolve.webgui import Draw
 from src import (
     create_spherical_geometry,
     create_ellipsoid_scatterer_geometry,
@@ -300,6 +301,11 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
     timings_file = job_dir / "timings.json"
     with open(timings_file, 'w') as f:
         json.dump(results['timings'], f, indent=2)
+
+    # Draw simulation results
+    draw_file = job_dir / "field_visualization.html"
+    clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,1,0) }
+    Draw(problem.solution, problem.fes.mesh, "B", clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file, euler_angles=[-90,0,0])
 
     print(f"\n✓ Results saved to: {job_dir}")
 

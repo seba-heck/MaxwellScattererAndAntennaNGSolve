@@ -19,9 +19,34 @@ from pathlib import Path
 from itertools import product
 from typing import Dict, List, Any
 
+def generate_wave_samples(num_waves: int = 100, wavelength_range: tuple = (0.33, 2.0)) -> List[Dict[str, Any]]:
+    # Wavelength sweep
+    _wavelengths = np.random.random(num_waves) * (wavelength_range[1] - wavelength_range[0]) + wavelength_range[0]
+
+    # Wave configurations (incident direction, polarization)
+    _directions = np.random.random(size=(num_waves, 3))
+    _directions *= 1.0 / np.linalg.norm(_directions, axis=1, keepdims=True)
+
+    _polarizations = np.random.random(size=(num_waves, 3))
+    _polarizations *= 1.0 / np.linalg.norm(_polarizations, axis=1, keepdims=True)
+
+    wave_configs = [ {
+        "wavelength": float(wavelength),
+        "propagation_dir": [i.item() for i in id], 
+        "polarization": [i.item() for i in ip], 
+        "label": f"wave_{i}"
+        } for i, (wavelength,id,ip) in enumerate(zip(_wavelengths, _directions, _polarizations)) ]
+    
+    return wave_configs
+
 def generate_scattering_random_ellipsoid(
-        num_geometries: int = 100, radius_range: tuple = (0.05, 0.5),
-        num_waves: int = 100, wave_depth_range: tuple = (1, 10)
+        num_geometries: int = 100, # number of geometry configurations
+        radius_range: tuple = (0.05, 0.5), # scatterer radius range in meters
+        wave_configs: List[Dict[str, Any]] = None, # list of wave configurations
+        R: float = 1.0, # domain outer radius
+        PMLw: float = 0.25, # PML-Layer width
+        h_max: float = 0.08, # max mesh size
+        curve_order: int = 5 # curve order of geometry
 ) -> List[Dict[str, Any]]:
     """
     Generate 1000 scattering problem configurations.
@@ -31,26 +56,13 @@ def generate_scattering_random_ellipsoid(
     Returns:
         List of parameter dictionaries
     """
-    R = 1.0
-    PMLw = 0.25
-    h_max = 0.01
-    curve_order = 5
 
     configs = []
 
-    # Wavelength sweep
-    _c = np.random.random(num_waves) * (wave_depth_range[1] - wave_depth_range[0]) + wave_depth_range[0]
-    _d = 1.0
-    wavelengths = _d / _c
-
-    # Wave configurations (incident direction, polarization)
-    _directions = np.random.random(size=(num_waves, 3))
-    _directions *= 1.0 / np.linalg.norm(_directions, axis=1, keepdims=True)
-
-    _polarizations = np.random.random(size=(num_waves, 3))
-    _polarizations *= 1.0 / np.linalg.norm(_polarizations, axis=1, keepdims=True)
-
-    wave_configs = [ {"direction": [i.item() for i in id], "polarization": [i.item() for i in ip], "label": f"wave_{i}"} for i, (id,ip) in enumerate(zip(_directions, _polarizations)) ]
+    if wave_configs is None:
+        print("Warning: No wave configurations provided, generating default 100 wave samples.")
+        wave_configs = generate_wave_samples()
+    num_waves = len(wave_configs)
 
     # Geometry configurations
     geometries = []
@@ -71,7 +83,7 @@ def generate_scattering_random_ellipsoid(
 
     # Generate all combinations
     job_id = 0
-    for wavelength,wave in zip(wavelengths, wave_configs):
+    for wave in wave_configs:
         for geom in geometries:
             config = {
                 "job_id": job_id,
@@ -79,34 +91,34 @@ def generate_scattering_random_ellipsoid(
 
                 # Physical parameters
                 "parameters": {
-                    "wavelength": float(wavelength),
+                    # "wavelength": float(wavelength),
                     
                     "ellipsoid_semi_axis_a": geom["semi_axis_a_factor"],
                     "ellipsoid_semi_axis_b": geom["semi_axis_b_factor"],
                     "ellipsoid_semi_axis_c": geom["semi_axis_c_factor"],
 
-                    # Incident wave
-                    "propagation_dir": wave["direction"],
-                    "polarization": wave["polarization"]
+                    # # Incident wave
+                    # "propagation_dir": wave["direction"],
+                    # "polarization": wave["polarization"]
                 },
 
                 # Geometry
                 "geometry": {
                     "type": geom["type"],
 
-                    "R": R,
-                    "PMLw": PMLw,
-                    "h_max": min(h_max, float(wavelength) / 6.0),
+                    "R": max(R, 1.5*wave["wavelength"]),
+                    "PMLw": max(PMLw, 0.375*wave["wavelength"]),
+                    "h_max": max(h_max, wave["wavelength"] / 8.0),
 
                     "curve_order": curve_order
                 },
 
                 # Solver
                 "solver": {
-                    "method": "direct",
+                    "method": "gmres",
                     "preconditioner": "block_jacobi",
                     "fes_order": 3,
-                    "maxiter": 1000,
+                    "maxiter": 2000,
                     "tol": 1e-6
                 },
 
@@ -116,6 +128,8 @@ def generate_scattering_random_ellipsoid(
                 },
             }
 
+            config["parameters"].update(wave)
+
             configs.append(config)
             job_id += 1
 
@@ -124,10 +138,24 @@ def generate_scattering_random_ellipsoid(
 
 
 def main():
-    """Generate sweep configurations."""
+    """Generate sweep job list."""
+
+    # Create the argument parser
+    parser = argparse.ArgumentParser(description="Create the jobs list (the configurations for each job).")
+
+    parser.add_argument("--filename",  type=str,  default=None, help="Name of the output file (default: random_'problem'_'object'_jobs).")
+    parser.add_argument("--problem",  type=str,  default="scatterer",        help="Type of problem: antenna or scatterer (default: scatterer).")
+    parser.add_argument("--object",    type=str,  default="ellipsoid", help="Type of geometry object for the simulation: ellipsoid (default: ellipsoid).")
+    parser.add_argument("--num-geometry",    type=int,  default=10,             help="Number of geometry configurations (default: 10).")
+    parser.add_argument("--num-sources",    type=int,  default=10,             help="Number of incident waves/sources (default: 10).")
+    # parser.add_argument("--idx_end",      type=int,  default=None,          help="Ending Job-Index (default: None).")
+    # parser.add_argument("--verbose",      type=bool, default=True,          help="Create more output (default: True)")
+
+    args = parser.parse_args()
 
     print("=" * 70)
-    print("Generating Random Ellipsoid Sweep Configurations")
+    print("Generating Random Sweep Jobs Configurations")
+    print(f"  for {args.problem} problem with {args.object} geometries.")
     print("=" * 70)
     print()
 
@@ -135,15 +163,39 @@ def main():
     configs_dir = Path(__file__).parent.parent / "configs"
     configs_dir.mkdir(exist_ok=True)
 
-    # Generate scattering sweep
-    print("1. Generating scattering random ellipsoid (10'000 jobs)...")
-    scattering_configs = generate_scattering_random_ellipsoid()
-    with open(configs_dir / "scattering_random_ellipsoid_sweep_jobs.json", 'w') as f:
-        json.dump(scattering_configs, f, indent=2)
-    print(f"   Wavelengths: 0.1m to 1.0m")
-    print(f"   Geometries: 100 types (ellipsoids)")
-    print(f"   Wave configs: 100 incident directions")
-    print()
+    # Create wave configurations
+    print(f"(1) Generating random incident wave configurations ({args.num_sources} waves)...", end="", flush=True)
+    wave_configs = generate_wave_samples(num_waves=args.num_sources)
+    print("  Done.", flush=True)
+    print(f"   Wavelengths: 0.33m to 2.0m")
+    print(f"   Wave configs: {args.num_sources} unique incident waves")
+
+    # Generate full job configurations
+    job_configs = None
+
+    if args.problem.lower() == "scatterer":
+        # (1) SCATTERER: Random Ellipsoids
+        print(f"(2) Generating random scattering jobs with ellipsoids ({args.num_geometry * args.num_sources} jobs)...", end="", flush=True)
+        job_configs = generate_scattering_random_ellipsoid(wave_configs=wave_configs, num_geometries=args.num_geometry)
+    else:
+        print(f"Error: Unknown problem type '{args.problem}'. Supported: 'scatterer'.")
+        sys.exit(1)
+    
+    print("  Done.", flush=True)
+    print(f"   Geometries: {args.num_geometry} geometreries")
+    print(f"   Type: {args.object}")
+
+    # Save to file
+    print(f"(3) Saving job configurations to file...", end="", flush=True)
+    if args.filename is None:
+        args.filename = f"random_{args.problem}_{args.object}_jobs"
+    
+    output_file = (configs_dir / (args.filename + ".json")).resolve()
+    with open(output_file, 'w') as f:
+        json.dump(job_configs, f, indent=2)
+
+    print("  Done.", flush=True)
+    print(f"   Output file: {output_file}")
 
     # Summary
     print("=" * 70)
@@ -152,7 +204,7 @@ def main():
     print(f"""
 ✓ Created 1 configuration files:
 
-  scattering_random_ellipsoid_sweep_jobs.json  - 10'000 scattering problems
+  {args.filename}.json  - {len(job_configs)} {args.problem} problems
 
 Next steps:
   1. Run pilot studies to validate convergence

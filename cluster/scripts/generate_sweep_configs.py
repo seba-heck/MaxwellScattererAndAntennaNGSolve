@@ -11,6 +11,7 @@ systematic variation of dimensionless parameters.
 """
 
 import yaml
+import json
 import itertools
 from pathlib import Path
 from typing import List, Dict, Any
