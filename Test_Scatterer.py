@@ -206,7 +206,7 @@ problem.set_solution(solution)
 
 clipping = { "function" : False,  "pnt" : (0,0,0.26), "vec" : (0,0,-1) }
 vectors = {"grid_size" : 50, "offset" : 0.5 }
-Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="bin/imgs/scatterer_solution_small.html");
+Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="bin/imgs/scatterer_solution_new.html");
 
 # CalcError(solution)
 # mesh.Refine()
