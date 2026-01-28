@@ -29,6 +29,8 @@ from ngsolve.webgui import Draw
 from src import (
     create_spherical_geometry,
     create_ellipsoid_scatterer_geometry,
+    create_box_scatterer_geometry,
+    create_cylinder_scatterer_geometry,
     create_spheroid_scatterer_geometry,
     create_dipole_antenna_geometry,
     create_incident_wave,
@@ -80,22 +82,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
     # Auto-detect geometry type from parameters
     wavelength = params['wavelength']
 
-    if 'dipole_length_factor' in params:
-        # Dipole antenna geometry
-        print(f"  → Creating cylindrical dipole antenna geometry")
-        mesh = create_dipole_antenna_geometry(
-            wavelength=wavelength,
-            length_factor=params['dipole_length_factor'],
-            radius_factor=params.get('dipole_radius_factor', 0.01),
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            orientation=params.get('dipole_orientation', 'z'),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'dipole'
-
-    elif 'ellipsoid_semi_axis_a' in params:
+    if geometry_config["type"] == "ellipsoid" or 'ellipsoid_semi_axis_a' in params:
         # Tri-axial ellipsoid scatterer
         print(f"  → Creating tri-axial ellipsoid scatterer geometry")
         mesh = create_ellipsoid_scatterer_geometry(
@@ -110,6 +97,53 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
             curve_order=geometry_config.get('curve_order', 5)
         )
         geometry_type = 'ellipsoid'
+
+    elif geometry_config["type"] == "box":
+        # Box geometry
+        print(f"  → Creating box geometry")
+        mesh = create_box_scatterer_geometry(
+            wavelength=wavelength,
+            axis_a=params['axis_a'],
+            axis_b=params['axis_b'],
+            axis_c=params['axis_c'],
+            box_radius=params['edge_radius'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'box'
+
+    elif geometry_config["type"] == "cylinder":
+        # Cylinder geometry
+        print(f"  → Creating cylinder geometry")
+        mesh = create_cylinder_scatterer_geometry(
+            wavelength=wavelength,
+            height=params['height'],
+            radius=params['radius_major'],
+            radius_2=params.get('radius_minor', None),
+            box_radius=params['edge_radius'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'box'
+
+    elif 'dipole_length_factor' in params:
+        # Dipole antenna geometry
+        print(f"  → Creating cylindrical dipole antenna geometry")
+        mesh = create_dipole_antenna_geometry(
+            wavelength=wavelength,
+            length_factor=params['dipole_length_factor'],
+            radius_factor=params.get('dipole_radius_factor', 0.01),
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            orientation=params.get('dipole_orientation', 'z'),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'dipole'
 
     elif 'spheroid_equatorial_radius' in params:
         # Spheroid scatterer
@@ -253,6 +287,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
 
 
 def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
+                 params: Dict[str, Any],
                 save_solution: bool = False, problem=None):
     """Save simulation results to output directory."""
     # Create job-specific directory
@@ -304,9 +339,16 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
 
     # Draw simulation results
     draw_file = job_dir / "field_visualization.html"
-    clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,1,0) }
-    Draw(problem.solution, problem.fes.mesh, "B", clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file, euler_angles=[-90,0,0])
+    clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,0,-1) }
 
+    line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
+    line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
+    points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
+    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {params['outer_radius']}, PML width = {params['PMLw']}, mesh size = {params['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
+    text_2 = { "type": "text", "name": "info2", "text": f" elements = {problem.fes.mesh.ne}, vertices = {problem.fes.mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
+    
+    Draw(problem.solution, problem.fes.mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
+    
     print(f"\n✓ Results saved to: {job_dir}")
 
 
@@ -415,7 +457,7 @@ def main():
     try:
         output_dir = Path(args.output_dir)
         save_solution = args.save_solution or job_params['output'].get('save_solution', False)
-        save_results(results, output_dir, args.job_id, save_solution, problem)
+        save_results(results, output_dir, args.job_id, params, save_solution, problem)
     except Exception as e:
         print(f"Error saving results: {e}", file=sys.stderr)
         return 1

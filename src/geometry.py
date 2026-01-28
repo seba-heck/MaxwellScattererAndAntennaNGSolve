@@ -290,11 +290,11 @@ def create_box_scatterer_geometry(
 
 def create_cylinder_scatterer_geometry(
     wavelength: float,
-    origin: tuple,
     height: float,
     radius: float,
     box_radius: float,
     radius_2: float = None,
+    origin: tuple = (0,0,0),
     direction: tuple = (0,0,1),
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
