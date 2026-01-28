@@ -25,13 +25,13 @@ from src import (
 )
 
 # PARAMETERS
-wavelength = 0.4
+wavelength = 2.0
 prop_dir = [0,0,1]
 polarization = [1,0,0]
 scatterer_radius = 0.1
 outer_radius = 1.0
 pml_width = 0.25
-mesh_size = 0.05
+mesh_size = 0.25
 order = 5
 solver = "gmres"  # options: gmres, bvp, cg, direct
 num_threads = 4
@@ -59,9 +59,9 @@ if False:
 if True:
     mesh = create_ellipsoid_scatterer_geometry(
         wavelength=wavelength,
-        semi_axis_a=0.4,
-        semi_axis_b=0.3125,
-        semi_axis_c=0.25,
+        semi_axis_a=0.12,
+        semi_axis_b=0.12,
+        semi_axis_c=0.15,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
@@ -206,7 +206,14 @@ problem.set_solution(solution)
 
 clipping = { "function" : False,  "pnt" : (0,0,0.26), "vec" : (0,0,-1) }
 vectors = {"grid_size" : 50, "offset" : 0.5 }
-Draw(solution, mesh, clipping=clipping, vectors=vectors, filename="bin/imgs/scatterer_solution_small.html");
+
+line_1 = { "type": "lines", "position": [1,1,0, 1+0.5*prop_dir[0], 1+0.5*prop_dir[1], 0.5*prop_dir[2]], "name": "propagation direction", "color": "red",}
+line_2 = { "type": "lines", "position": [1,1,0, 1+0.5*polarization[0], 1+0.5*polarization[1], 0.5*polarization[2]], "name": "polarization direction", "color": "blue"}
+points = { "type": "points", "position": [1,1,0], "size":20, "color": "black", "name": "origin"}
+text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {wavelength}, outer radius = {outer_radius}, PML width = {pml_width}, mesh size = {mesh_size}", "position": [-1,-1.2,0]}
+text_2 = { "type": "text", "name": "info2", "text": f" elements = {mesh.ne}, vertices = {mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-1,-1.3,0]}
+
+Draw(solution, mesh, objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, filename="bin/imgs/scatterer_solution_small.html");
 
 # CalcError(solution)
 # mesh.Refine()
