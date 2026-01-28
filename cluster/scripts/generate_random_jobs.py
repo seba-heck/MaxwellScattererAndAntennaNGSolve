@@ -106,8 +106,8 @@ def generate_scattering_random_ellipsoid(
                 "geometry": {
                     "type": geom["type"],
 
-                    "R": max(R, 1.5*wave["wavelength"]),
-                    "PMLw": max(PMLw, 0.375*wave["wavelength"]),
+                    "R": max(R, 1.0*wave["wavelength"]),
+                    "PMLw": max(PMLw, 0.25*wave["wavelength"]),
                     "h_max": max(h_max, wave["wavelength"] / 8.0),
 
                     "curve_order": curve_order
