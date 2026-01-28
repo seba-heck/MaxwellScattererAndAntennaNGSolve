@@ -251,11 +251,7 @@ def create_box_scatterer_geometry(
         body = rect.Extrude(axis_c)
         scatterer = body.MakeFillet(body.edges, box_radius).Move((-axis_a/2,-axis_b/2,-axis_c/2))
     scatterer.faces.name = "inner"
-<<<<<<< HEAD
-    scatterer.faces.maxh = max_mesh_size
-=======
     scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
->>>>>>> 6c3d3ad44872fa9050bbc7e9212c93b9332a1df1
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
@@ -294,11 +290,11 @@ def create_box_scatterer_geometry(
 
 def create_cylinder_scatterer_geometry(
     wavelength: float,
-    origin: tuple,
     height: float,
     radius: float,
     box_radius: float,
     radius_2: float = None,
+    origin: tuple = (0,0,0),
     direction: tuple = (0,0,1),
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
