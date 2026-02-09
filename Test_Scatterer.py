@@ -25,7 +25,7 @@ from src import (
 )
 
 # PARAMETERS
-wavelength = 2.0
+wavelength = 1.0
 prop_dir = [0,0,1]
 polarization = [1,0,0]
 scatterer_radius = 0.1
@@ -59,9 +59,9 @@ if False:
 if True:
     mesh = create_ellipsoid_scatterer_geometry(
         wavelength=wavelength,
-        semi_axis_a=0.12,
-        semi_axis_b=0.12,
-        semi_axis_c=0.15,
+        semi_axis_a=0.125,
+        semi_axis_b=0.25,
+        semi_axis_c=0.25,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
@@ -132,7 +132,7 @@ print(f"  Elements: {mesh.ne}")
 print(f"  Vertices: {mesh.nv}")
 
 clipping = { "function" : False,  "pnt" : (0,0,0.25), "vec" : (0,0,-1) }
-Draw(mesh, clipping=clipping, filename="bin/imgs/scatterer_mesh_small.html")
+Draw(mesh, clipping=clipping, filename="bin/imgs/scatterer_mesh_test.html")
 
 
 # """
@@ -179,7 +179,7 @@ E_inc = create_incident_wave(
     polarization=tuple(polarization)
 )
 
-Draw(E_inc,mesh, filename="bin/imgs/scatterer_Einc_small.html")
+Draw(E_inc,mesh, filename="bin/imgs/scatterer_Einc_test.html")
 
 # SETUP PROBLEM
 print(f"\nSetting up scattering problem...", flush=True)
@@ -194,7 +194,7 @@ solution = None
 with TaskManager():#pajetrace=10**8):
     # 'block_jacobi', 'bddc', 'hcurlamg'
     if solver == "gmres":
-        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000, restart=100)
+        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=400)#, restart=100)
     elif solver == "bvp":
         solution = solve_bvp(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000)
     elif solver == "cg":
@@ -213,7 +213,7 @@ points = { "type": "points", "position": [1,1,0], "size":20, "color": "black", "
 text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {wavelength}, outer radius = {outer_radius}, PML width = {pml_width}, mesh size = {mesh_size}", "position": [-1,-1.2,0]}
 text_2 = { "type": "text", "name": "info2", "text": f" elements = {mesh.ne}, vertices = {mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-1,-1.3,0]}
 
-Draw(solution, mesh, objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, filename="bin/imgs/scatterer_solution_small.html");
+Draw(solution, mesh, objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, filename="bin/imgs/scatterer_solution_test.html");
 
 # CalcError(solution)
 # mesh.Refine()
