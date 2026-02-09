@@ -25,13 +25,13 @@ from src import (
 )
 
 # PARAMETERS
-wavelength = 2.0
+wavelength = 0.4
 prop_dir = [0,0,1]
 polarization = [1,0,0]
 scatterer_radius = 0.1
 outer_radius = 1.0
 pml_width = 0.25
-mesh_size = 0.25
+mesh_size = 0.08
 order = 5
 solver = "gmres"  # options: gmres, bvp, cg, direct
 num_threads = 4
@@ -213,7 +213,7 @@ points = { "type": "points", "position": [1,1,0], "size":20, "color": "black", "
 text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {wavelength}, outer radius = {outer_radius}, PML width = {pml_width}, mesh size = {mesh_size}", "position": [-1,-1.2,0]}
 text_2 = { "type": "text", "name": "info2", "text": f" elements = {mesh.ne}, vertices = {mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-1,-1.3,0]}
 
-Draw(solution, mesh, objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, filename="bin/imgs/scatterer_solution_small.html");
+Draw(solution, mesh, objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, filename="bin/imgs/scatterer_solution_new.html");
 
 # CalcError(solution)
 # mesh.Refine()
