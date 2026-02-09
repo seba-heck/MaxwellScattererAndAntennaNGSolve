@@ -287,7 +287,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
 
 
 def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
-                 params: Dict[str, Any],
+                 params: Dict[str, Any], geometry_config: Dict[str, Any],
                 save_solution: bool = False, problem=None):
     """Save simulation results to output directory."""
     # Create job-specific directory
@@ -344,7 +344,7 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
     line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
     line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
     points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
-    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {params['outer_radius']}, PML width = {params['PMLw']}, mesh size = {params['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
+    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {geometry_config['R']}, PML width = {geometry_config['PMLw']}, mesh size = {geometry_config['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
     text_2 = { "type": "text", "name": "info2", "text": f" elements = {problem.fes.mesh.ne}, vertices = {problem.fes.mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
     
     Draw(problem.solution, problem.fes.mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
@@ -457,7 +457,7 @@ def main():
     try:
         output_dir = Path(args.output_dir)
         save_solution = args.save_solution or job_params['output'].get('save_solution', False)
-        save_results(results, output_dir, args.job_id, params, save_solution, problem)
+        save_results(results, output_dir, args.job_id, params, job_params['geometry'], save_solution, problem)
     except Exception as e:
         print(f"Error saving results: {e}", file=sys.stderr)
         return 1
