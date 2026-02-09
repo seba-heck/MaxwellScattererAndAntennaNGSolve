@@ -29,13 +29,16 @@ import sys
 from typing import Optional, Tuple
 import numpy as np
 
-def setup_basic_geometry(R: float, R_pml: float, scatterer, max_mesh_size: float):
+def setup_basic_geometry(R: float, R_pml: float, max_mesh_size: float, scatterer = None):
     # Create spherical computational domain
     outer_sphere = Sphere(Pnt(0, 0, 0), R)
     pml_sphere = Sphere(Pnt(0, 0, 0), R_pml)
 
     # Create vacuum region (between scatterer and PML)
-    vacuum_region = pml_sphere - scatterer
+    if scatterer is None:
+        vacuum_region = pml_sphere
+    else:
+        vacuum_region = pml_sphere - scatterer
     vacuum_region.mat("vacuum")
     vacuum_region.maxh = max_mesh_size
     vacuum_region.faces.col = (0.7, 0.7, 1.0)  # Light blue
@@ -65,6 +68,57 @@ def make_mesh_from_geometry(geometry, max_mesh_size: float, curve_order: int) ->
 
     return mesh
 
+
+def create_empty_geometry(
+    wavelength: float,
+    domain_radius: float = 1.0,
+    pml_width: float = 0.25,
+    max_mesh_size: Optional[float] = None,
+    curve_order: int = 5
+) -> Mesh:
+    """
+    Create ellipsoidal scatterer geometry with PML boundary conditions.
+
+    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
+    the x, y, z directions respectively (after applying orientation).
+
+    Geometry structure:
+    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Middle region: Vacuum (field propagation)
+    - Outer region: PML layer (absorbing boundary)
+
+    Args:
+        wavelength: Wavelength in meters (for mesh sizing reference)
+        domain_radius: Outer sphere radius (meters)
+        pml_width: PML layer thickness (meters)
+        max_mesh_size: Maximum element size (meters). Default: wavelength/15
+        curve_order: Mesh curve order (higher = better geometry approximation)
+
+    Returns:
+        NGSolve Mesh object with labeled regions and boundaries
+    """
+    # Set default mesh size (10-15 elements per wavelength)
+    if max_mesh_size is None:
+        max_mesh_size = wavelength / 15.0
+
+    # Validate parameters
+    if pml_width >= domain_radius:
+        raise ValueError(f"PML width ({pml_width}) must be less than domain radius ({domain_radius})")
+
+    pml_inner_radius = domain_radius - pml_width
+
+    if  pml_inner_radius <= 0:
+        raise ValueError(f"PML inner radius ({pml_inner_radius:.3f}) must be positive")
+
+    # Setup basic geometry regions
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=None)
+
+    # Combine regions
+    geometry = Glue([vacuum_region, pml_region])
+
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+    return mesh
 
 def create_ellipsoid_scatterer_geometry(
     wavelength: float,
@@ -170,7 +224,7 @@ def create_ellipsoid_scatterer_geometry(
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
@@ -255,7 +309,7 @@ def create_box_scatterer_geometry(
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
@@ -385,7 +439,7 @@ def create_cylinder_scatterer_geometry(
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
@@ -475,7 +529,7 @@ def create_two_box_scatterer_geometry(
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
@@ -559,7 +613,7 @@ def create_two_ellipsoid_scatterer_geometry(
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
@@ -717,7 +771,7 @@ def create_dipole_antenna_geometry(
     dipole.faces.col = (0, 0, 1)  # Blue for antenna
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, scatterer, max_mesh_size)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])

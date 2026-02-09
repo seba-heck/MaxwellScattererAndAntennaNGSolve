@@ -62,6 +62,7 @@ from .geometry import (
     create_two_box_scatterer_geometry,
     create_two_ellipsoid_scatterer_geometry,
     create_cylinder_scatterer_geometry,
+    create_empty_geometry,
 )
 
 from .scatterer import ScattererProblem
@@ -96,6 +97,7 @@ __all__ = [
     "create_two_box_scatterer_geometry",
     "create_two_ellipsoid_scatterer_geometry",
     "create_cylinder_scatterer_geometry",
+    "create_empty_geometry",
 
     # Utilities
     "create_incident_wave",

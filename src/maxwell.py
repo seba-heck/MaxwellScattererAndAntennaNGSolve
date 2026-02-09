@@ -126,6 +126,7 @@ class MaxwellProblem:
         # Impedance boundary condition on inner surface
         # ∫_Γ -ik (n×E)·(n×E') dΓ
         self.a += -1j * self.k * E.Trace() * Ep.Trace() * ds("inner")
+        # self.a += -1j * self.k * (Cross(n, E.Trace()) * Cross(n, Ep.Trace())) * ds("inner")
 
         # Create linear form
         self.l = LinearForm(self.fes)
@@ -138,6 +139,7 @@ class MaxwellProblem:
         # Source field boundary term
         # ∫_Γ -ik (n×E_source)·(n×E') dΓ
         self.l += -1j * self.k * Cross(n, self.source) * Ep.Trace() * ds("inner")
+        # self.l += -1j * self.k * (Cross(n, self.source) * Cross(n, Ep.Trace())) * ds("inner")
 
         print("Maxwell system assembled")
 
