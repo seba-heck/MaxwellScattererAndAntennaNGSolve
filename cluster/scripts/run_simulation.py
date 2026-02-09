@@ -57,6 +57,102 @@ def load_job_parameters(job_file: Path, job_id: int) -> Dict[str, Any]:
     return jobs[job_id]
 
 
+def create_geometry(geometry_config: Dict[str, Any], params: Dict[str, Any], verbose: bool = True):
+    """Create geometry and mesh based on configuration."""
+    wavelength = params['wavelength']
+    
+    if geometry_config["type"] == "ellipsoid" or 'ellipsoid_semi_axis_a' in params:
+        # Tri-axial ellipsoid scatterer
+        if verbose: print(f"  → Creating tri-axial ellipsoid scatterer geometry")
+        mesh = create_ellipsoid_scatterer_geometry(
+            wavelength=wavelength,
+            semi_axis_a=params['ellipsoid_semi_axis_a'],
+            semi_axis_b=params['ellipsoid_semi_axis_b'],
+            semi_axis_c=params['ellipsoid_semi_axis_c'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            orientation=params.get('ellipsoid_orientation', 'z'),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'ellipsoid'
+
+    elif geometry_config["type"] == "box":
+        # Box geometry
+        if verbose: print(f"  → Creating box geometry")
+        mesh = create_box_scatterer_geometry(
+            wavelength=wavelength,
+            axis_a=params['axis_a'],
+            axis_b=params['axis_b'],
+            axis_c=params['axis_c'],
+            box_radius=params['edge_radius'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'box'
+
+    elif geometry_config["type"] == "cylinder":
+        # Cylinder geometry
+        if verbose: print(f"  → Creating cylinder geometry")
+        mesh = create_cylinder_scatterer_geometry(
+            wavelength=wavelength,
+            height=params['height'],
+            radius=params['radius_major'],
+            radius_2=params.get('radius_minor', None),
+            box_radius=params['edge_radius'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'cylinder'
+
+    elif 'dipole_length_factor' in params:
+        # Dipole antenna geometry
+        if verbose: print(f"  → Creating cylindrical dipole antenna geometry")
+        mesh = create_dipole_antenna_geometry(
+            wavelength=wavelength,
+            length_factor=params['dipole_length_factor'],
+            radius_factor=params.get('dipole_radius_factor', 0.01),
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            orientation=params.get('dipole_orientation', 'z'),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'dipole'
+
+    elif 'spheroid_equatorial_radius' in params:
+        # Spheroid scatterer
+        if verbose: print(f"  → Creating spheroid scatterer geometry")
+        mesh = create_spheroid_scatterer_geometry(
+            wavelength=wavelength,
+            equatorial_radius=params['spheroid_equatorial_radius'],
+            polar_radius=params['spheroid_polar_radius'],
+            domain_radius=geometry_config.get('R', 1.0),
+            pml_width=geometry_config.get('PMLw', 0.25),
+            max_mesh_size=geometry_config.get('h_max', None),
+            orientation=params.get('spheroid_orientation', 'z'),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'spheroid'
+
+    else:
+        # Default: spherical geometry (backward compatibility)
+        if verbose: print(f"  → Creating spherical geometry (default)")
+        mesh = create_spherical_geometry(
+            R=geometry_config.get('R', 1.0),
+            PMLw=geometry_config.get('PMLw', 0.25),
+            r=geometry_config.get('r', 0.1),
+            h_max=geometry_config.get('h_max', 0.5),
+            curve_order=geometry_config.get('curve_order', 5)
+        )
+        geometry_type = 'sphere'
+    
+    return mesh, geometry_type
+
 def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, Any]:
     """
     Run electromagnetic simulation with given parameters.
@@ -82,95 +178,97 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
     # Auto-detect geometry type from parameters
     wavelength = params['wavelength']
 
-    if geometry_config["type"] == "ellipsoid" or 'ellipsoid_semi_axis_a' in params:
-        # Tri-axial ellipsoid scatterer
-        print(f"  → Creating tri-axial ellipsoid scatterer geometry")
-        mesh = create_ellipsoid_scatterer_geometry(
-            wavelength=wavelength,
-            semi_axis_a=params['ellipsoid_semi_axis_a'],
-            semi_axis_b=params['ellipsoid_semi_axis_b'],
-            semi_axis_c=params['ellipsoid_semi_axis_c'],
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            orientation=params.get('ellipsoid_orientation', 'z'),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'ellipsoid'
+    mesh,geometry_type = create_geometry(geometry_config, params)
 
-    elif geometry_config["type"] == "box":
-        # Box geometry
-        print(f"  → Creating box geometry")
-        mesh = create_box_scatterer_geometry(
-            wavelength=wavelength,
-            axis_a=params['axis_a'],
-            axis_b=params['axis_b'],
-            axis_c=params['axis_c'],
-            box_radius=params['edge_radius'],
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'box'
+    # if geometry_config["type"] == "ellipsoid" or 'ellipsoid_semi_axis_a' in params:
+    #     # Tri-axial ellipsoid scatterer
+    #     print(f"  → Creating tri-axial ellipsoid scatterer geometry")
+    #     mesh = create_ellipsoid_scatterer_geometry(
+    #         wavelength=wavelength,
+    #         semi_axis_a=params['ellipsoid_semi_axis_a'],
+    #         semi_axis_b=params['ellipsoid_semi_axis_b'],
+    #         semi_axis_c=params['ellipsoid_semi_axis_c'],
+    #         domain_radius=geometry_config.get('R', 1.0),
+    #         pml_width=geometry_config.get('PMLw', 0.25),
+    #         max_mesh_size=geometry_config.get('h_max', None),
+    #         orientation=params.get('ellipsoid_orientation', 'z'),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'ellipsoid'
 
-    elif geometry_config["type"] == "cylinder":
-        # Cylinder geometry
-        print(f"  → Creating cylinder geometry")
-        mesh = create_cylinder_scatterer_geometry(
-            wavelength=wavelength,
-            height=params['height'],
-            radius=params['radius_major'],
-            radius_2=params.get('radius_minor', None),
-            box_radius=params['edge_radius'],
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'box'
+    # elif geometry_config["type"] == "box":
+    #     # Box geometry
+    #     print(f"  → Creating box geometry")
+    #     mesh = create_box_scatterer_geometry(
+    #         wavelength=wavelength,
+    #         axis_a=params['axis_a'],
+    #         axis_b=params['axis_b'],
+    #         axis_c=params['axis_c'],
+    #         box_radius=params['edge_radius'],
+    #         domain_radius=geometry_config.get('R', 1.0),
+    #         pml_width=geometry_config.get('PMLw', 0.25),
+    #         max_mesh_size=geometry_config.get('h_max', None),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'box'
 
-    elif 'dipole_length_factor' in params:
-        # Dipole antenna geometry
-        print(f"  → Creating cylindrical dipole antenna geometry")
-        mesh = create_dipole_antenna_geometry(
-            wavelength=wavelength,
-            length_factor=params['dipole_length_factor'],
-            radius_factor=params.get('dipole_radius_factor', 0.01),
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            orientation=params.get('dipole_orientation', 'z'),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'dipole'
+    # elif geometry_config["type"] == "cylinder":
+    #     # Cylinder geometry
+    #     print(f"  → Creating cylinder geometry")
+    #     mesh = create_cylinder_scatterer_geometry(
+    #         wavelength=wavelength,
+    #         height=params['height'],
+    #         radius=params['radius_major'],
+    #         radius_2=params.get('radius_minor', None),
+    #         box_radius=params['edge_radius'],
+    #         domain_radius=geometry_config.get('R', 1.0),
+    #         pml_width=geometry_config.get('PMLw', 0.25),
+    #         max_mesh_size=geometry_config.get('h_max', None),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'cylinder'
 
-    elif 'spheroid_equatorial_radius' in params:
-        # Spheroid scatterer
-        print(f"  → Creating spheroid scatterer geometry")
-        mesh = create_spheroid_scatterer_geometry(
-            wavelength=wavelength,
-            equatorial_radius=params['spheroid_equatorial_radius'],
-            polar_radius=params['spheroid_polar_radius'],
-            domain_radius=geometry_config.get('R', 1.0),
-            pml_width=geometry_config.get('PMLw', 0.25),
-            max_mesh_size=geometry_config.get('h_max', None),
-            orientation=params.get('spheroid_orientation', 'z'),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'spheroid'
+    # elif 'dipole_length_factor' in params:
+    #     # Dipole antenna geometry
+    #     print(f"  → Creating cylindrical dipole antenna geometry")
+    #     mesh = create_dipole_antenna_geometry(
+    #         wavelength=wavelength,
+    #         length_factor=params['dipole_length_factor'],
+    #         radius_factor=params.get('dipole_radius_factor', 0.01),
+    #         domain_radius=geometry_config.get('R', 1.0),
+    #         pml_width=geometry_config.get('PMLw', 0.25),
+    #         max_mesh_size=geometry_config.get('h_max', None),
+    #         orientation=params.get('dipole_orientation', 'z'),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'dipole'
 
-    else:
-        # Default: spherical geometry (backward compatibility)
-        print(f"  → Creating spherical geometry (default)")
-        mesh = create_spherical_geometry(
-            R=geometry_config.get('R', 1.0),
-            PMLw=geometry_config.get('PMLw', 0.25),
-            r=geometry_config.get('r', 0.1),
-            h_max=geometry_config.get('h_max', 0.5),
-            curve_order=geometry_config.get('curve_order', 5)
-        )
-        geometry_type = 'sphere'
+    # elif 'spheroid_equatorial_radius' in params:
+    #     # Spheroid scatterer
+    #     print(f"  → Creating spheroid scatterer geometry")
+    #     mesh = create_spheroid_scatterer_geometry(
+    #         wavelength=wavelength,
+    #         equatorial_radius=params['spheroid_equatorial_radius'],
+    #         polar_radius=params['spheroid_polar_radius'],
+    #         domain_radius=geometry_config.get('R', 1.0),
+    #         pml_width=geometry_config.get('PMLw', 0.25),
+    #         max_mesh_size=geometry_config.get('h_max', None),
+    #         orientation=params.get('spheroid_orientation', 'z'),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'spheroid'
+
+    # else:
+    #     # Default: spherical geometry (backward compatibility)
+    #     print(f"  → Creating spherical geometry (default)")
+    #     mesh = create_spherical_geometry(
+    #         R=geometry_config.get('R', 1.0),
+    #         PMLw=geometry_config.get('PMLw', 0.25),
+    #         r=geometry_config.get('r', 0.1),
+    #         h_max=geometry_config.get('h_max', 0.5),
+    #         curve_order=geometry_config.get('curve_order', 5)
+    #     )
+    #     geometry_type = 'sphere'
 
     timings['mesh_gen'] = time.perf_counter() - t0
     print(f"  ✓ Mesh generated ({geometry_type}): {mesh.ne} elements in {timings['mesh_gen']:.2f}s")
@@ -344,7 +442,7 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
     line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
     line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
     points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
-    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {params['outer_radius']}, PML width = {params['PMLw']}, mesh size = {params['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
+    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {params['R']}, PML width = {params['PMLw']}, mesh size = {params['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
     text_2 = { "type": "text", "name": "info2", "text": f" elements = {problem.fes.mesh.ne}, vertices = {problem.fes.mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
     
     Draw(problem.solution, problem.fes.mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
