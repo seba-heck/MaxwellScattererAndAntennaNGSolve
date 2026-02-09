@@ -59,9 +59,9 @@ if False:
 if True:
     mesh = create_ellipsoid_scatterer_geometry(
         wavelength=wavelength,
-        semi_axis_a=0.125,
-        semi_axis_b=0.25,
-        semi_axis_c=0.25,
+        semi_axis_a=0.25,
+        semi_axis_b=0.125,
+        semi_axis_c=0.125,
         domain_radius=outer_radius,
         pml_width=pml_width,
         max_mesh_size=mesh_size,
@@ -194,7 +194,7 @@ solution = None
 with TaskManager():#pajetrace=10**8):
     # 'block_jacobi', 'bddc', 'hcurlamg'
     if solver == "gmres":
-        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=400)#, restart=100)
+        solution = solve_gmres(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=500)#, restart=100)
     elif solver == "bvp":
         solution = solve_bvp(problem.a, problem.l, problem.fes, preconditioner="block_jacobi", maxsteps=1000)
     elif solver == "cg":
