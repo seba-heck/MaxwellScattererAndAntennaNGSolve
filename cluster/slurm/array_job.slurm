@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem-per-cpu=10G
-#SBATCH --time=01:00:00
+#SBATCH --time=06:00:00
 #SBATCH --hint=nomultithread
 #SBATCH --output=logs/%x/%a.out
 #SBATCH --error=logs/%x/%a.err
@@ -77,6 +77,9 @@ elif [ -d "$HOME/.venvs/ngsolve_env" ]; then
 elif [ -d "$HOME/.venvs/ngs311" ]; then
     echo "Using legacy virtual environment: $HOME/.venvs/ngs311"
     source "$HOME/.venvs/ngs311/bin/activate"
+elif [ -d "$HOME/VENVS/ma" ]; then
+    echo "Using custom virtual environment: $HOME/VENVS/ma"
+    source "$HOME/VENVS/ma/bin/activate"
 else
     echo "⚠️  Warning: No virtual environment found, using system Python"
     echo "   Run: bash cluster/scripts/setup_environment.sh"
