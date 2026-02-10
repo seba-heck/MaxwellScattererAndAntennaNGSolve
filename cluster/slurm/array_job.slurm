@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH --job-name=antenna_sweep
+#SBATCH --job-name=scatterer_sweep
 #SBATCH --partition=normal
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
@@ -35,7 +35,7 @@ CONFIGS_DIR="${CLUSTER_DIR}/configs"
 # Usage: export ANTENNA_RESULTS_BASE=/scratch/$USER/antenna_results
 RESULTS_BASE="${ANTENNA_RESULTS_BASE:-${CLUSTER_DIR}/results}"
 RESULTS_DIR="${RESULTS_BASE}/${SWEEP_NAME}"
-LOGS_DIR="${CLUSTER_DIR}/logs/${SWEEP_NAME}"
+LOGS_DIR="${ANTENNA_RESULTS_BASE:-${CLUSTER_DIR}/logs/${SWEEP_NAME}}"
 
 JOB_FILE="${CONFIGS_DIR}/${SWEEP_NAME}_jobs.json"
 TASK_ID="${SLURM_ARRAY_TASK_ID}"
