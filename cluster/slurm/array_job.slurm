@@ -4,11 +4,11 @@
 #SBATCH --nodes=1
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
-#SBATCH --mem-per-cpu=10G
+#SBATCH --mem-per-cpu=8G
 #SBATCH --time=06:00:00
 #SBATCH --hint=nomultithread
-#SBATCH --output=logs/%x/%a.out
-#SBATCH --error=logs/%x/%a.err
+#SBATCH --output=/cluster/scratch/sheckers/dset-scatterer/logs/%x/%a.out
+#SBATCH --error=/cluster/scratch/sheckers/dset-scatterer/logs/%x/%a.err
 
 # MaxwellScattererAndAntennaNGSolve SLURM Job Array Script
 #
@@ -35,7 +35,7 @@ CONFIGS_DIR="${CLUSTER_DIR}/configs"
 # Usage: export ANTENNA_RESULTS_BASE=/scratch/$USER/antenna_results
 RESULTS_BASE="${ANTENNA_RESULTS_BASE:-${CLUSTER_DIR}/results}"
 RESULTS_DIR="${RESULTS_BASE}/${SWEEP_NAME}"
-LOGS_DIR="${ANTENNA_RESULTS_BASE:-${CLUSTER_DIR}/logs/${SWEEP_NAME}}"
+LOGS_DIR="${ANTENNA_RESULTS_BASE:-${CLUSTER_DIR}}/logs/time"
 
 JOB_FILE="${CONFIGS_DIR}/${SWEEP_NAME}_jobs.json"
 TASK_ID="${SLURM_ARRAY_TASK_ID}"

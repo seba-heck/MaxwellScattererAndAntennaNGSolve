@@ -406,16 +406,26 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
 
             vtk = VTKOutput(
                 ma=problem.fes.mesh,
-                coefs=[gfu.real, gfu.imag],
-                names=["E_real", "E_imag"],
+                coefs=[gfu.real[0], gfu.real[1], gfu.real[2], gfu.imag[0], gfu.imag[1], gfu.imag[2]],
+                names=["E_real_x", "E_real_y", "E_real_z", "E_imag_x", "E_imag_y", "E_imag_z"],
                 filename=vtk_path,
-                subdivision=2  # Smoother visualization in ParaView
+                subdivision=2,
+                legacy=True
             )
             vtk.Do()
 
+            vtu = VTKOutput(
+                ma=problem.fes.mesh,
+                coefs=[gfu.real[0], gfu.real[1], gfu.real[2], gfu.imag[0], gfu.imag[1], gfu.imag[2]],
+                names=["E_real_x", "E_real_y", "E_real_z", "E_imag_x", "E_imag_y", "E_imag_z"],
+                filename=vtk_path,
+                subdivision=2  # Smoother visualization in ParaView
+            )
+            vtu.Do()
+
             # NGSolve creates files like: E_field.vtu or E_field_000000.vtu
             # Record which files were created
-            vtk_files = ["E_field.vtu"]
+            vtk_files = ["E_field.vtk","E_field.vtu"]
             print(f"  ✓ VTK output saved: E_field.vtu")
 
         except Exception as e:
@@ -435,18 +445,19 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
     with open(timings_file, 'w') as f:
         json.dump(results['timings'], f, indent=2)
 
-    # Draw simulation results
-    draw_file = job_dir / "field_visualization.html"
-    clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,0,-1) }
+    if False:
+        # Draw simulation results
+        draw_file = job_dir / "field_visualization.html"
+        clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,0,-1) }
 
-    line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
-    line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
-    points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
-    text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {geometry_config['R']}, PML width = {geometry_config['PMLw']}, mesh size = {geometry_config['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
-    text_2 = { "type": "text", "name": "info2", "text": f" elements = {problem.fes.mesh.ne}, vertices = {problem.fes.mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
-    
-    Draw(problem.solution, problem.fes.mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
-    
+        line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
+        line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
+        points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
+        text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {geometry_config['R']}, PML width = {geometry_config['PMLw']}, mesh size = {geometry_config['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.2,0]}
+        text_2 = { "type": "text", "name": "info2", "text": f" elements = {problem.fes.mesh.ne}, vertices = {problem.fes.mesh.nv}, free DOFs = {sum(problem.fes.FreeDofs())}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
+        
+        Draw(problem.solution, problem.fes.mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
+        
     print(f"\n✓ Results saved to: {job_dir}")
 
 

@@ -85,7 +85,7 @@ def assemble_parameter_dict(wave_configs: List[Dict[str, Any]], geometries: List
 
                     "R": max(R, 1.5*wave["wavelength"]),
                     "PMLw": max(PMLw, 0.375*wave["wavelength"]),
-                    "h_max": max(h_max, wave["wavelength"] / 8.0),
+                    "h_max": max(h_max, wave["wavelength"] / 5.0),
 
                     "curve_order": curve_order
                 },

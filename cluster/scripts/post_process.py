@@ -30,9 +30,9 @@ def find_completed_jobs(results_dir: Path) -> List[Path]:
 
 def find_error_jobs(results_dir: Path) -> List[Path]:
     """Find all job directories that have an error log."""
-    error_jobs = {"meshing_failed": [], "error": [], "other": []}
+    error_jobs = {"meshing_failed": [], "error": [], "segment": [], "other": []}
     for job_file in sorted(results_dir.glob("*.err")):
-        job_nbr = int(job_file.stem.split(".")[-2])
+        job_nbr = int(job_file.stem.split("/")[-1])
         
         with open(job_file, 'r') as f:
             content = f.read()
@@ -44,6 +44,8 @@ def find_error_jobs(results_dir: Path) -> List[Path]:
                 elif "Error" in content:
                     # print(f"Error in {job_nbr}")
                     error_jobs["error"].append(job_nbr)
+                elif "Segmentation" in content:
+                    error_jobs["segment"].append(job_nbr)
                 else:
                     # print(f"Error Msg in {job_file}")
                     error_jobs["other"].append(job_nbr)
@@ -255,6 +257,8 @@ def main():
         print(f"Error: Results directory not found: {results_dir}", file=sys.stderr)
         return 1
 
+    log_dir = Path(args.log_dir)
+
     print("=" * 70)
     print(f"Post-Processing: {results_dir}")
     print("=" * 70)
@@ -303,18 +307,28 @@ def main():
 
     if len(error_jobs["meshing_failed"]) > 0 or len(error_jobs["error"]) > 0 or len(error_jobs["other"]) > 0:
             
-        print("=" * 70)
+        print("\n"+"=" * 70)
         print(f"Failed jobs summary:")
         print("=" * 70)
 
-        print(f"\n Found failed jobs, total: {len(error_jobs['meshing_failed']) + len(error_jobs['error']) + len(error_jobs['other'])}")
+        fail_sum = 0
 
-        print(f"\n- Meshing failed in {len(error_jobs['meshing_failed'])} jobs: {error_jobs['meshing_failed']}")
+        print("\nFound failed jobs:")
 
-        print(f"\n- Errors in {len(error_jobs['error'])} jobs: {error_jobs['error']}")
+        if len(error_jobs['meshing_failed']) > 0:
+            fail_sum += len(error_jobs['meshing_failed'])
+            print(f" - Meshing failed in {len(error_jobs['meshing_failed'])} jobs: {error_jobs['meshing_failed'][:100]}")
+        if len(error_jobs['error']) > 0:
+            fail_sum += len(error_jobs['error'])
+            print(f" - Errors in {len(error_jobs['error'])} jobs: {error_jobs['error'][:100]}")
+        if len(error_jobs['segment']) > 0:
+            fail_sum += len(error_jobs['segment'])
+            print(f" - Segmentation fault in {len(error_jobs['segment'])} jobs: {error_jobs['segment'][:100]}")
+        if len(error_jobs['other']) > 0:
+            fail_sum += len(error_jobs['other'])
+            print(f" - Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other'][:100]}")
 
-        print(f"\n- Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other']}")
-
+        print(f"\nTotal number of jobs: {fail_sum}")
 
     # Print summary
     print_summary(df, summary)
