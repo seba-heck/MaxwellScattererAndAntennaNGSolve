@@ -42,6 +42,18 @@ TASK_ID="${SLURM_ARRAY_TASK_ID}"
 NTHREADS="${SLURM_CPUS_PER_TASK:-1}"
 
 # ============================================================================
+# Check for successful job
+# ============================================================================
+
+files=("${RESULTS_DIR}/logs/${SWEEP_NAME}/${TASK_ID}.out" "${RESULTS_DIR}/logs/${SWEEP_NAME}/${TASK_ID}.err")
+
+for file in "${files[@]}"; do
+    if [ -f "$file" ]; then
+        echo "WARNING: File exists: $file"
+    fi
+done
+
+# ============================================================================
 # Environment Setup
 # ============================================================================
 

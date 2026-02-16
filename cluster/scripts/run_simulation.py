@@ -511,6 +511,23 @@ def main():
         num_threads = args.num_threads
     else:
         num_threads = int(os.environ.get('SLURM_CPUS_PER_TASK', 4))
+    
+    # Check for existing output files to prevent overwriting previous results
+    job_dir = Path(args.output_dir) / f"job_{args.job_id:04d}"
+    if job_dir.exists():
+        print(f"Warning: Job directory already exists.")
+        file_list = ["E_field.vtk", "E_field.vtu", "metadata.json"]
+        file_count = 0
+
+        for file_name in file_list:
+            file_path = job_dir / file_name
+            if file_path.exists():
+                print(f"  ⚠ Found file: {file_path}")
+                file_count += 1
+    
+        if file_count > 1:
+            print(f"  ⚠ Warning: Found {file_count} existing files in job directory. This may indicate a previous run. Consider cleaning up the output directory to avoid confusion.")
+            return 1
 
     print("=" * 70)
     print(f"MaxwellScattererAndAntennaNGSolve Simulation")
