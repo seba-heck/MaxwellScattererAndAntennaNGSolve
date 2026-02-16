@@ -538,7 +538,7 @@ def main():
         elif 'amplitude' in params:
             print(f"  Type:         Antenna")
             print(f"  Amplitude:    {params['amplitude']}")
-        print(f"  Polarization: {params['polarization']}")
+        print(f"  Polarization: {params['polarization']}", flush=True)
     except Exception as e:
         print(f"Error loading job parameters: {e}", file=sys.stderr)
         return 1
