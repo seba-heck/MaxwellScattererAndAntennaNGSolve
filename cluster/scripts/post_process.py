@@ -28,6 +28,28 @@ def find_completed_jobs(results_dir: Path) -> List[Path]:
             job_dirs.append(job_dir)
     return job_dirs
 
+def find_error_jobs(results_dir: Path) -> List[Path]:
+    """Find all job directories that have an error log."""
+    error_jobs = {"meshing_failed": [], "error": [], "other": []}
+    for job_file in sorted(results_dir.glob("*.err")):
+        job_nbr = int(job_file.stem.split(".")[-2])
+        
+        with open(job_file, 'r') as f:
+            content = f.read()
+
+            if len(content.strip()) > 131:
+                if "Meshing failed!" in content:
+                    # print(f"Meshing failed in {job_nbr}")
+                    error_jobs["meshing_failed"].append(job_nbr)
+                elif "Error" in content:
+                    # print(f"Error in {job_nbr}")
+                    error_jobs["error"].append(job_nbr)
+                else:
+                    # print(f"Error Msg in {job_file}")
+                    error_jobs["other"].append(job_nbr)
+    
+    return error_jobs
+
 
 def load_job_metadata(job_dir: Path) -> Dict[str, Any]:
     """Load metadata from a job directory."""
@@ -216,6 +238,11 @@ def main():
         help='Results directory containing job_XXXX subdirectories'
     )
     parser.add_argument(
+        'log_dir',
+        type=str,
+        help='Log directory containing XXXX.out and XXXX.err output files.'
+    )
+    parser.add_argument(
         '--no-plots',
         action='store_true',
         help='Skip plot generation'
@@ -270,6 +297,24 @@ def main():
     if not args.no_plots:
         print("\nGenerating plots...")
         generate_plots(df, results_dir)
+
+    # Failed jobs
+    error_jobs = find_error_jobs(log_dir)
+
+    if len(error_jobs["meshing_failed"]) > 0 or len(error_jobs["error"]) > 0 or len(error_jobs["other"]) > 0:
+            
+        print("=" * 70)
+        print(f"Failed jobs summary:")
+        print("=" * 70)
+
+        print(f"\n Found failed jobs, total: {len(error_jobs['meshing_failed']) + len(error_jobs['error']) + len(error_jobs['other'])}")
+
+        print(f"\n- Meshing failed in {len(error_jobs['meshing_failed'])} jobs: {error_jobs['meshing_failed']}")
+
+        print(f"\n- Errors in {len(error_jobs['error'])} jobs: {error_jobs['error']}")
+
+        print(f"\n- Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other']}")
+
 
     # Print summary
     print_summary(df, summary)
