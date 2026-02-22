@@ -30,26 +30,42 @@ def find_completed_jobs(results_dir: Path) -> List[Path]:
 
 def find_error_jobs(results_dir: Path) -> List[Path]:
     """Find all job directories that have an error log."""
-    error_jobs = {"meshing_failed": [], "error": [], "segment": [], "other": []}
+    error_jobs = {"meshing": [], "error": [], "segment": [], "time": [], "other": []}
     for job_file in sorted(results_dir.glob("*.err")):
         job_nbr = int(job_file.stem.split("/")[-1])
         
         with open(job_file, 'r') as f:
             content = f.read()
 
-            if len(content.strip()) > 131:
-                if "Meshing failed!" in content:
+            if len(content.strip()) > 131:  
+                if "JOB_DONE" in content or "exit code 2" in content:
+                    pass
+                elif "Meshing failed!" in content:
                     # print(f"Meshing failed in {job_nbr}")
-                    error_jobs["meshing_failed"].append(job_nbr)
+                    error_jobs["meshing"].append(job_nbr)
                 elif "Error" in content:
                     # print(f"Error in {job_nbr}")
                     error_jobs["error"].append(job_nbr)
                 elif "Segmentation" in content:
                     error_jobs["segment"].append(job_nbr)
+                elif "TIME LIMIT" in content:
+                    error_jobs["time"].append(job_nbr)
                 else:
                     # print(f"Error Msg in {job_file}")
                     error_jobs["other"].append(job_nbr)
-    
+
+    # check regular outfile of jobs with other error msg
+    for job_nbr in error_jobs["other"]:
+        job_file = results_dir / f"{job_nbr}.out"
+        with open(job_file, 'r') as f:
+            content = f.read()
+
+            if "MESHING ERROR" in content:
+                error_jobs["other"].remove(job_nbr)
+                error_jobs["meshing"].append(job_nbr)
+            elif "✓ Simulation completed successfully!" in content:
+                error_jobs["other"].remove(job_nbr)
+                
     return error_jobs
 
 
@@ -308,7 +324,7 @@ def main():
     # Failed jobs
     error_jobs = find_error_jobs(log_dir)
 
-    if len(error_jobs["meshing_failed"]) > 0 or len(error_jobs["error"]) > 0 or len(error_jobs["other"]) > 0:
+    if len(error_jobs["meshing"]) > 0 or len(error_jobs["error"]) > 0 or len(error_jobs["other"]) > 0:
             
         print("\n"+"=" * 70)
         print(f"Failed jobs summary:")
@@ -318,15 +334,18 @@ def main():
 
         print("\nFound failed jobs:")
 
-        if len(error_jobs['meshing_failed']) > 0:
-            fail_sum += len(error_jobs['meshing_failed'])
-            print(f" - Meshing failed in {len(error_jobs['meshing_failed'])} jobs: {error_jobs['meshing_failed'][:100]}")
+        if len(error_jobs['meshing']) > 0:
+            fail_sum += len(error_jobs['meshing'])
+            print(f" - Meshing failed in {len(error_jobs['meshing'])} jobs: {error_jobs['meshing'][:100]}")
         if len(error_jobs['error']) > 0:
             fail_sum += len(error_jobs['error'])
             print(f" - Errors in {len(error_jobs['error'])} jobs: {error_jobs['error'][:100]}")
         if len(error_jobs['segment']) > 0:
             fail_sum += len(error_jobs['segment'])
             print(f" - Segmentation fault in {len(error_jobs['segment'])} jobs: {error_jobs['segment'][:100]}")
+        if len(error_jobs['time']) > 0:
+            fail_sum += len(error_jobs['time'])
+            print(f" - Time limit reached in {len(error_jobs['time'])} jobs: {error_jobs['time'][:100]}")
         if len(error_jobs['other']) > 0:
             fail_sum += len(error_jobs['other'])
             print(f" - Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other'][:100]}")

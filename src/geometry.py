@@ -408,8 +408,10 @@ def create_cylinder_scatterer_geometry(
         if radius_2 is None:
             rect = Circle(origin_, radius).Face()
         else:
+            major = max(radius,radius_2)
+            minor = min(radius,radius_2)
             wpplate = WorkPlane(Axes())
-            rect = wpplate.Ellipse(radius, radius_2).Face()
+            rect = wpplate.Ellipse(major, minor).Face()
         body = rect.Extrude(height)
         # Try fillet with decreasing radii; if it fails, fall back to no fillet.
         scatterer_body = None
