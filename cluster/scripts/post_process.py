@@ -258,6 +258,9 @@ def main():
         return 1
 
     log_dir = Path(args.log_dir)
+    if not log_dir.exists():
+        print(f"Error: Log directory not found: {log_dir}", file=sys.stderr)
+        return 1
 
     print("=" * 70)
     print(f"Post-Processing: {results_dir}")
