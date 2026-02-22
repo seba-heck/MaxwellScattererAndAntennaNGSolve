@@ -271,7 +271,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
     #     geometry_type = 'sphere'
 
     timings['mesh_gen'] = time.perf_counter() - t0
-    print(f"  ✓ Mesh generated ({geometry_type}): {mesh.ne} elements in {timings['mesh_gen']:.2f}s")
+    print(f"  ✓ Mesh generated ({geometry_type}): {mesh.ne} elements in {timings['mesh_gen']:.2f}s", flush=True)
 
     # 2. Compute wavenumber from wavelength
     wavelength = params['wavelength']
@@ -290,7 +290,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
             polarization=tuple(params['polarization'])
         )
         problem_type = 'scattering'
-        print(f"  ✓ Incident wave (scattering) configured in {time.perf_counter() - t0:.3f}s")
+        print(f"  ✓ Incident wave (scattering) configured in {time.perf_counter() - t0:.3f}s", flush=True)
     elif 'amplitude' in params:
         # Antenna problem: antenna excitation
         source = create_antenna_source(
@@ -298,7 +298,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
             amplitude=params['amplitude']
         )
         problem_type = 'antenna'
-        print(f"  ✓ Antenna source configured in {time.perf_counter() - t0:.3f}s")
+        print(f"  ✓ Antenna source configured in {time.perf_counter() - t0:.3f}s", flush=True)
     else:
         raise ValueError(
             "Config must specify either 'propagation_dir' (scattering) or 'amplitude' (antenna)"
@@ -318,7 +318,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
     )
     problem.assemble_system()
     timings['assembly'] = time.perf_counter() - t0
-    print(f"  ✓ System assembled in {timings['assembly']:.2f}s")
+    print(f"  ✓ System assembled in {timings['assembly']:.2f}s", flush=True)
 
     # 5. Solve
     print(f"\n[4/4] Solving linear system...")
@@ -344,7 +344,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
 
     timings['solve'] = time.perf_counter() - t0
     timings['total'] = sum(timings.values())
-    print(f"  ✓ Solved in {timings['solve']:.2f}s")
+    print(f"  ✓ Solved in {timings['solve']:.2f}s", flush=True)
 
     # Store solution in problem
     problem.set_solution(solution)
@@ -526,8 +526,10 @@ def main():
                 file_count += 1
     
         if file_count > 1:
-            print(f"  ⚠ Warning: Found {file_count} existing files in job directory. This may indicate a previous run. Consider cleaning up the output directory to avoid confusion.")
-            return 1
+            print(f"\nWarning: Found {file_count} existing files in job directory. This may indicate a previous run. Consider cleaning up the output directory to avoid confusion.")
+            print(f"⚠ Stopping the simulation (JOB_DONE).")
+            print(f"⚠ Stopping the simulation (JOB_DONE).", file=sys.stderr)
+            return 2
 
     print("=" * 70)
     print(f"MaxwellScattererAndAntennaNGSolve Simulation")
