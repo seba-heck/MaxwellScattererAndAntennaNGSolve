@@ -1,5 +1,7 @@
 # (temporary) output files, etc.
 bin/
+cluster/results/
+cluster/configs/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
