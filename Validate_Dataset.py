@@ -383,7 +383,7 @@ else:
 # ## ============================================================================
 mesh_stats = []
 #for jid in trange(len(jobs)):
-for jid in trange(0,7500,15):
+for jid in trange(0,7500,24):
     job = jobs[jid]
     params = job['parameters']
     geometry_config = job['geometry']
