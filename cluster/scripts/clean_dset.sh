@@ -19,7 +19,7 @@ if [ -z "$SOURCE_DIR" ] || [ -z "$TARGET_DIR" ]; then
     exit 1
 fi
 
-REQUIRED_FILES=("E_field.vtu" "metadata.json")
+REQUIRED_FILES=("E_field.vtu" "E_field.vtk" "metadata.json")
 VISU_DIR="${TARGET_DIR}visu"
 mkdir -p "$VISU_DIR" &>/dev/null
 
@@ -60,12 +60,12 @@ WHITE=$'\033[37m'
 current=0
 fails=0
 htmls=0
-BLOCK_SIZE=3
+BLOCK_SIZE=500
 NUM_BLOCKS=$(( (TOTAL + BLOCK_SIZE - 1) / BLOCK_SIZE ))
 
 update_bar_width() {
     TERM_WIDTH=$(tput cols)
-    RESERVED=25
+    RESERVED=35
     BAR_WIDTH=$((TERM_WIDTH - RESERVED))
     [ "$BAR_WIDTH" -lt 10 ] && BAR_WIDTH=10
 }

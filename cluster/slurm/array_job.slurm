@@ -5,7 +5,7 @@
 #SBATCH --ntasks=1
 #SBATCH --cpus-per-task=32
 #SBATCH --mem-per-cpu=8G
-#SBATCH --time=06:00:00
+#SBATCH --time=12:00:00
 #SBATCH --hint=nomultithread
 #SBATCH --output=/cluster/scratch/sheckers/dset-scatterer/logs/%x/%a.out
 #SBATCH --error=/cluster/scratch/sheckers/dset-scatterer/logs/%x/%a.err

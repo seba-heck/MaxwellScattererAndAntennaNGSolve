@@ -2,6 +2,8 @@
 bin/
 cluster/results/
 cluster/configs/
+logs/
+cluster/logs/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
@@ -31,3 +33,7 @@ ENV/
 Thumbs.db
 .env_info
 activate_env.sh
+
+# SLURM files
+slurm-*.out
+slurm-*.err
