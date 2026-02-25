@@ -3,6 +3,7 @@ Parametrizable geometry generation for antenna and scatterer problems.
 
 This module provides functions to create various electromagnetic geometries:
 - Ellipsoidal scatterers (tri-axial and spheroid)
+- Rounded box or cylinder scatterers
 - Cylindrical dipole antennas
 
 All geometries include:
@@ -30,6 +31,15 @@ from typing import Optional, Tuple
 import numpy as np
 
 def setup_basic_geometry(R: float, R_pml: float, max_mesh_size: float, scatterer = None):
+    """
+    Assemble the full geometry model. Combine and the scatterer object, the outer sphere and PML.
+    
+    Args:
+        R: Radius of the computational domain / the outer sphere.
+        R_pml: Radius of the inner sphere, computational domain - PML width.
+        max_mesh_size: Maximum element size (meters).
+        scatterer: Scatterer object. Default: None -> empty domain.
+    """
     # Create spherical computational domain
     outer_sphere = Sphere(Pnt(0, 0, 0), R)
     pml_sphere = Sphere(Pnt(0, 0, 0), R_pml)
@@ -77,13 +87,13 @@ def create_empty_geometry(
     curve_order: int = 5
 ) -> Mesh:
     """
-    Create ellipsoidal scatterer geometry with PML boundary conditions.
+    Create geometry without scatterer object.
 
-    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
-    the x, y, z directions respectively (after applying orientation).
+    It only defines an inner and outer sphere for the computational domain
+    and the PML.
 
     Geometry structure:
-    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Inner region: empty
     - Middle region: Vacuum (field propagation)
     - Outer region: PML layer (absorbing boundary)
 
@@ -244,29 +254,28 @@ def create_box_scatterer_geometry(
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
     scatterer_mesh_size: Optional[float] = None,
-    orientation: str = 'z',
     curve_order: int = 5
 ) -> Mesh:
     """
-    Create ellipsoidal scatterer geometry with PML boundary conditions.
+    Create box scatterer geometry with PML boundary conditions.
 
-    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
-    the x, y, z directions respectively (after applying orientation).
+    The (rounded) box is defined by three axes (a, b, c) corresponding to
+    the side length of box in the x, y, z directions.
 
     Geometry structure:
-    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Inner region: Box scatterer (perfect conductor)
     - Middle region: Vacuum (field propagation)
     - Outer region: PML layer (absorbing boundary)
 
     Args:
         wavelength: Wavelength in meters (for mesh sizing reference)
-        semi_axis_a: Semi-axis length along first direction (meters)
-        semi_axis_b: Semi-axis length along second direction (meters)
-        semi_axis_c: Semi-axis length along third direction (meters)
+        axis_a: side-length in the first direction (meters)
+        axis_b: side-length in the second direction (meters)
+        axis_c: side-length in the third direction (meters)
+        box_radius: Radius of the rounded edges (meters)
         domain_radius: Outer sphere radius (meters)
         pml_width: PML layer thickness (meters)
         max_mesh_size: Maximum element size (meters). Default: wavelength/15
-        orientation: Major axis orientation ('x', 'y', or 'z')
         curve_order: Mesh curve order (higher = better geometry approximation)
 
     Returns:
@@ -291,10 +300,6 @@ def create_box_scatterer_geometry(
             f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
             f"PML inner radius ({pml_inner_radius:.3f})"
         )
-
-    # Create coordinate system based on orientation
-    # center = Pnt(0, 0, 0)
-    # axes = Axes(center, n=gp_Dir(0, 0, 1), h=gp_Dir(1, 0, 0))
 
     # Create box scatterer
     if box_radius == 0.0:
@@ -356,25 +361,27 @@ def create_cylinder_scatterer_geometry(
     curve_order: int = 5
 ) -> Mesh:
     """
-    Create ellipsoidal scatterer geometry with PML boundary conditions.
+    Create cylinder scatterer geometry with PML boundary conditions.
 
-    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
-    the x, y, z directions respectively (after applying orientation).
+    The cylinder is defined by two semi-axes (radius, radius_2) corresponding to
+    the major and minor radius of the ellipse and the height of the cylinder..
 
     Geometry structure:
-    - Inner region: Ellipsoidal scatterer (perfect conductor)
+    - Inner region: Cylinder scatterer (perfect conductor)
     - Middle region: Vacuum (field propagation)
     - Outer region: PML layer (absorbing boundary)
 
     Args:
         wavelength: Wavelength in meters (for mesh sizing reference)
-        semi_axis_a: Semi-axis length along first direction (meters)
-        semi_axis_b: Semi-axis length along second direction (meters)
-        semi_axis_c: Semi-axis length along third direction (meters)
+        height: length/height of the cylinder (meters)
+        radius: (major) radius of the ellipse (meters)
+        box_radius: radius of the rounded edges (meters)
+        radius_2: (minor) radius of the ellipse (meters)
+        origin: origin position for scatterer
+        direction: direction to build the cylinder
         domain_radius: Outer sphere radius (meters)
         pml_width: PML layer thickness (meters)
         max_mesh_size: Maximum element size (meters). Default: wavelength/15
-        orientation: Major axis orientation ('x', 'y', or 'z')
         curve_order: Mesh curve order (higher = better geometry approximation)
 
     Returns:
@@ -391,14 +398,6 @@ def create_cylinder_scatterer_geometry(
     # max_scatterer_dim = max(axis_a, axis_b, axis_c)
     pml_inner_radius = domain_radius - pml_width
     
-    # if max_scatterer_dim >= pml_inner_radius:
-    #     raise ValueError(
-    #         f"Scatterer max dimension ({max_scatterer_dim:.3f}) must be less than "
-    #         f"PML inner radius ({pml_inner_radius:.3f})"
-    #     )
-
-    # Create coordinate system based on orientation
-
     # Create box scatterer
     if box_radius == 0.0:
         origin_ = Pnt(origin[0],origin[1],origin[2]-height/2)
@@ -467,29 +466,7 @@ def create_two_box_scatterer_geometry(
     curve_order: int = 5
 ) -> Mesh:
     """
-    Create ellipsoidal scatterer geometry with PML boundary conditions.
-
-    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
-    the x, y, z directions respectively (after applying orientation).
-
-    Geometry structure:
-    - Inner region: Ellipsoidal scatterer (perfect conductor)
-    - Middle region: Vacuum (field propagation)
-    - Outer region: PML layer (absorbing boundary)
-
-    Args:
-        wavelength: Wavelength in meters (for mesh sizing reference)
-        semi_axis_a: Semi-axis length along first direction (meters)
-        semi_axis_b: Semi-axis length along second direction (meters)
-        semi_axis_c: Semi-axis length along third direction (meters)
-        domain_radius: Outer sphere radius (meters)
-        pml_width: PML layer thickness (meters)
-        max_mesh_size: Maximum element size (meters). Default: wavelength/15
-        orientation: Major axis orientation ('x', 'y', or 'z')
-        curve_order: Mesh curve order (higher = better geometry approximation)
-
-    Returns:
-        NGSolve Mesh object with labeled regions and boundaries
+    Create geometry of 2 box scatterer with PML boundary conditions.
     """
     # Set default mesh size (10-15 elements per wavelength)
     if max_mesh_size is None:
@@ -557,29 +534,7 @@ def create_two_ellipsoid_scatterer_geometry(
     curve_order: int = 5
 ) -> Mesh:
     """
-    Create ellipsoidal scatterer geometry with PML boundary conditions.
-
-    The ellipsoid is defined by three semi-axes (a, b, c) corresponding to
-    the x, y, z directions respectively (after applying orientation).
-
-    Geometry structure:
-    - Inner region: Ellipsoidal scatterer (perfect conductor)
-    - Middle region: Vacuum (field propagation)
-    - Outer region: PML layer (absorbing boundary)
-
-    Args:
-        wavelength: Wavelength in meters (for mesh sizing reference)
-        semi_axis_a: Semi-axis length along first direction (meters)
-        semi_axis_b: Semi-axis length along second direction (meters)
-        semi_axis_c: Semi-axis length along third direction (meters)
-        domain_radius: Outer sphere radius (meters)
-        pml_width: PML layer thickness (meters)
-        max_mesh_size: Maximum element size (meters). Default: wavelength/15
-        orientation: Major axis orientation ('x', 'y', or 'z')
-        curve_order: Mesh curve order (higher = better geometry approximation)
-
-    Returns:
-        NGSolve Mesh object with labeled regions and boundaries
+    Create geometry of 2 ellipsoid scatterer with PML boundary conditions.
     """
     # Set default mesh size (10-15 elements per wavelength)
     if max_mesh_size is None:
@@ -773,7 +728,7 @@ def create_dipole_antenna_geometry(
     dipole.faces.col = (0, 0, 1)  # Blue for antenna
 
     # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
+    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=dipole)
 
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
