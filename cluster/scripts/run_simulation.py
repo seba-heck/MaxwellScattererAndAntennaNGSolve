@@ -180,96 +180,6 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
 
     mesh,geometry_type = create_geometry(geometry_config, params)
 
-    # if geometry_config["type"] == "ellipsoid" or 'ellipsoid_semi_axis_a' in params:
-    #     # Tri-axial ellipsoid scatterer
-    #     print(f"  → Creating tri-axial ellipsoid scatterer geometry")
-    #     mesh = create_ellipsoid_scatterer_geometry(
-    #         wavelength=wavelength,
-    #         semi_axis_a=params['ellipsoid_semi_axis_a'],
-    #         semi_axis_b=params['ellipsoid_semi_axis_b'],
-    #         semi_axis_c=params['ellipsoid_semi_axis_c'],
-    #         domain_radius=geometry_config.get('R', 1.0),
-    #         pml_width=geometry_config.get('PMLw', 0.25),
-    #         max_mesh_size=geometry_config.get('h_max', None),
-    #         orientation=params.get('ellipsoid_orientation', 'z'),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'ellipsoid'
-
-    # elif geometry_config["type"] == "box":
-    #     # Box geometry
-    #     print(f"  → Creating box geometry")
-    #     mesh = create_box_scatterer_geometry(
-    #         wavelength=wavelength,
-    #         axis_a=params['axis_a'],
-    #         axis_b=params['axis_b'],
-    #         axis_c=params['axis_c'],
-    #         box_radius=params['edge_radius'],
-    #         domain_radius=geometry_config.get('R', 1.0),
-    #         pml_width=geometry_config.get('PMLw', 0.25),
-    #         max_mesh_size=geometry_config.get('h_max', None),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'box'
-
-    # elif geometry_config["type"] == "cylinder":
-    #     # Cylinder geometry
-    #     print(f"  → Creating cylinder geometry")
-    #     mesh = create_cylinder_scatterer_geometry(
-    #         wavelength=wavelength,
-    #         height=params['height'],
-    #         radius=params['radius_major'],
-    #         radius_2=params.get('radius_minor', None),
-    #         box_radius=params['edge_radius'],
-    #         domain_radius=geometry_config.get('R', 1.0),
-    #         pml_width=geometry_config.get('PMLw', 0.25),
-    #         max_mesh_size=geometry_config.get('h_max', None),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'cylinder'
-
-    # elif 'dipole_length_factor' in params:
-    #     # Dipole antenna geometry
-    #     print(f"  → Creating cylindrical dipole antenna geometry")
-    #     mesh = create_dipole_antenna_geometry(
-    #         wavelength=wavelength,
-    #         length_factor=params['dipole_length_factor'],
-    #         radius_factor=params.get('dipole_radius_factor', 0.01),
-    #         domain_radius=geometry_config.get('R', 1.0),
-    #         pml_width=geometry_config.get('PMLw', 0.25),
-    #         max_mesh_size=geometry_config.get('h_max', None),
-    #         orientation=params.get('dipole_orientation', 'z'),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'dipole'
-
-    # elif 'spheroid_equatorial_radius' in params:
-    #     # Spheroid scatterer
-    #     print(f"  → Creating spheroid scatterer geometry")
-    #     mesh = create_spheroid_scatterer_geometry(
-    #         wavelength=wavelength,
-    #         equatorial_radius=params['spheroid_equatorial_radius'],
-    #         polar_radius=params['spheroid_polar_radius'],
-    #         domain_radius=geometry_config.get('R', 1.0),
-    #         pml_width=geometry_config.get('PMLw', 0.25),
-    #         max_mesh_size=geometry_config.get('h_max', None),
-    #         orientation=params.get('spheroid_orientation', 'z'),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'spheroid'
-
-    # else:
-    #     # Default: spherical geometry (backward compatibility)
-    #     print(f"  → Creating spherical geometry (default)")
-    #     mesh = create_spherical_geometry(
-    #         R=geometry_config.get('R', 1.0),
-    #         PMLw=geometry_config.get('PMLw', 0.25),
-    #         r=geometry_config.get('r', 0.1),
-    #         h_max=geometry_config.get('h_max', 0.5),
-    #         curve_order=geometry_config.get('curve_order', 5)
-    #     )
-    #     geometry_type = 'sphere'
-
     timings['mesh_gen'] = time.perf_counter() - t0
     print(f"  ✓ Mesh generated ({geometry_type}): {mesh.ne} elements in {timings['mesh_gen']:.2f}s", flush=True)
 
@@ -386,7 +296,7 @@ def run_simulation(job_params: Dict[str, Any], num_threads: int) -> Dict[str, An
 
 def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
                  params: Dict[str, Any], geometry_config: Dict[str, Any],
-                save_solution: bool = False, problem=None):
+                save_solution: bool = False, draw_solution: bool = False, problem=None):
     """Save simulation results to output directory."""
     # Create job-specific directory
     job_dir = output_dir / f"job_{job_id:04d}"
@@ -445,7 +355,7 @@ def save_results(results: Dict[str, Any], output_dir: Path, job_id: int,
     with open(timings_file, 'w') as f:
         json.dump(results['timings'], f, indent=2)
 
-    if False:
+    if draw_solution:
         # Draw simulation results
         draw_file = job_dir / "field_visualization.html"
         clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,0,-1) }

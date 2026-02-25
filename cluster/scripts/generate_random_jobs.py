@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
 """
-Generate random job parameter file from YAML configuration.
+Generate random job parameter file from randomly sampled parameters.
 
-This script reads a YAML configuration file defining a parametric sweep
+This script parses configuration arguments defining a parametric sweep
 and generates a JSON file containing all parameter combinations for each job.
 
 Usage:
-    python generate_jobs.py configs/spherical_sweep.yaml
-    python generate_jobs.py configs/my_sweep.yaml --validate-only
+    python generate_random_jobs.py --filename <path> ...
 """
 
 import argparse
@@ -65,19 +64,7 @@ def assemble_parameter_dict(wave_configs: List[Dict[str, Any]], geometries: List
                 "problem_type": "scattering",
 
                 # Physical parameters
-                "parameters": {
-                    # "wavelength": float(wavelength),
-                    
-                    # "axis_a": geom["semi_axis_a_factor"],
-                    # "axis_b": geom["semi_axis_b_factor"],
-                    # "axis_c": geom["semi_axis_c_factor"],
-
-                    # "edge_radius": geom["edge_radius"],
-
-                    # # Incident wave
-                    # "propagation_dir": wave["direction"],
-                    # "polarization": wave["polarization"]
-                },
+                "parameters": {},
 
                 # Geometry
                 "geometry": {
@@ -154,58 +141,6 @@ def generate_scattering_random_ellipsoid(
         })
 
     assert len(geometries) == num_geometries, f"Expected {num_geometries} geometries, got {len(geometries)}"
-
-    # # Generate all combinations
-    # job_id = 0
-    # for wave in wave_configs:
-    #     for geom in geometries:
-    #         config = {
-    #             "job_id": job_id,
-    #             "problem_type": "scattering",
-
-    #             # Physical parameters
-    #             "parameters": {
-    #                 # "wavelength": float(wavelength),
-                    
-    #                 "ellipsoid_semi_axis_a": geom["semi_axis_a_factor"],
-    #                 "ellipsoid_semi_axis_b": geom["semi_axis_b_factor"],
-    #                 "ellipsoid_semi_axis_c": geom["semi_axis_c_factor"],
-
-    #                 # # Incident wave
-    #                 # "propagation_dir": wave["direction"],
-    #                 # "polarization": wave["polarization"]
-    #             },
-
-    #             # Geometry
-    #             "geometry": {
-    #                 "type": geom["type"],
-
-    #                 "R": max(R, 1.5*wave["wavelength"]),
-    #                 "PMLw": max(PMLw, 0.375*wave["wavelength"]),
-    #                 "h_max": max(h_max, wave["wavelength"] / 8.0),
-
-    #                 "curve_order": curve_order
-    #             },
-
-    #             # Solver
-    #             "solver": {
-    #                 "method": "gmres",
-    #                 "preconditioner": "block_jacobi",
-    #                 "fes_order": 3,
-    #                 "maxiter": 2000,
-    #                 "tol": 1e-6
-    #             },
-
-    #             # Output
-    #             "output": {
-    #                 "save_solution": True,
-    #             },
-    #         }
-
-    #         config["parameters"].update(wave)
-
-    #         configs.append(config)
-    #         job_id += 1
 
     configs = assemble_parameter_dict(
         wave_configs=wave_configs,
@@ -334,15 +269,12 @@ def main():
     parser = argparse.ArgumentParser(description="Create the jobs list (the configurations for each job).")
 
     parser.add_argument("--filename",  type=str,  default=None, help="Name of the output file (default: random_'problem'_'object'_jobs).")
-    parser.add_argument("--problem",  type=str,  default="scatterer",        help="Type of problem: antenna or scatterer (default: scatterer).")
-    # parser.add_argument("--object",    type=str,  default="ellipsoid", help="Type of geometry object for the simulation: ellipsoid (default: ellipsoid).")
+    parser.add_argument("--problem",   type=str,  default="scatterer",        help="Type of problem: antenna or scatterer (default: scatterer).")
     parser.add_argument("--ellipsoid", action='store_true', help='Make jobs with ellipsoid geometries.')
-    parser.add_argument("--box", action='store_true', help='Make jobs with box geometries.')
-    parser.add_argument("--cylinder", action='store_true', help='Make jobs with cylinder geometries.')
-    parser.add_argument("--num-geometry",    type=str,  default='10',             help="Comma separated number of geometry configurations (default: 10).")
-    parser.add_argument("--num-sources",    type=int,  default=10,             help="Number of incident waves/sources (default: 10).")
-    # parser.add_argument("--idx_end",      type=int,  default=None,          help="Ending Job-Index (default: None).")
-    # parser.add_argument("--verbose",      type=bool, default=True,          help="Create more output (default: True)")
+    parser.add_argument("--box",       action='store_true', help='Make jobs with box geometries.')
+    parser.add_argument("--cylinder",  action='store_true', help='Make jobs with cylinder geometries.')
+    parser.add_argument("--num-geometry",  type=str,  default='10',             help="Comma separated number of geometry configurations (default: 10).")
+    parser.add_argument("--num-sources",   type=int,  default=10,             help="Number of incident waves/sources (default: 10).")
 
     args = parser.parse_args()
 

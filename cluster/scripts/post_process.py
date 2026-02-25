@@ -332,23 +332,34 @@ def main():
 
         fail_sum = 0
 
+        fails_dict = {'meshing': " - Meshing failed in {} jobs: {}",
+                      'error':   " - Errors in {} jobs: {}",
+                      'segment': " - Segmentation fault in {} jobs: {}",
+                      'time':    " - Time limit reached in {} jobs: {}",
+                      'other':   " - Other error msg in {} jobs: {}"}
+        
         print("\nFound failed jobs:")
 
-        if len(error_jobs['meshing']) > 0:
-            fail_sum += len(error_jobs['meshing'])
-            print(f" - Meshing failed in {len(error_jobs['meshing'])} jobs: {error_jobs['meshing'][:100]}")
-        if len(error_jobs['error']) > 0:
-            fail_sum += len(error_jobs['error'])
-            print(f" - Errors in {len(error_jobs['error'])} jobs: {error_jobs['error'][:100]}")
-        if len(error_jobs['segment']) > 0:
-            fail_sum += len(error_jobs['segment'])
-            print(f" - Segmentation fault in {len(error_jobs['segment'])} jobs: {error_jobs['segment'][:100]}")
-        if len(error_jobs['time']) > 0:
-            fail_sum += len(error_jobs['time'])
-            print(f" - Time limit reached in {len(error_jobs['time'])} jobs: {error_jobs['time'][:100]}")
-        if len(error_jobs['other']) > 0:
-            fail_sum += len(error_jobs['other'])
-            print(f" - Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other'][:100]}")
+        for fail_ in fails_dict:
+            if len(error_jobs[fail_]) > 0:
+                fail_sum += len(error_jobs[fail_])
+                print(fails_dict[fail_].format(len(error_jobs[fail_]), error_jobs[fail_][:100]))
+
+        # if len(error_jobs['meshing']) > 0:
+        #     fail_sum += len(error_jobs['meshing'])
+        #     print(f" - Meshing failed in {len(error_jobs['meshing'])} jobs: {error_jobs['meshing'][:100]}")
+        # if len(error_jobs['error']) > 0:
+        #     fail_sum += len(error_jobs['error'])
+        #     print(f" - Errors in {len(error_jobs['error'])} jobs: {error_jobs['error'][:100]}")
+        # if len(error_jobs['segment']) > 0:
+        #     fail_sum += len(error_jobs['segment'])
+        #     print(f" - Segmentation fault in {len(error_jobs['segment'])} jobs: {error_jobs['segment'][:100]}")
+        # if len(error_jobs['time']) > 0:
+        #     fail_sum += len(error_jobs['time'])
+        #     print(f" - Time limit reached in {len(error_jobs['time'])} jobs: {error_jobs['time'][:100]}")
+        # if len(error_jobs['other']) > 0:
+        #     fail_sum += len(error_jobs['other'])
+        #     print(f" - Other error msg in {len(error_jobs['other'])} jobs: {error_jobs['other'][:100]}")
 
         print(f"\nTotal number of jobs: {fail_sum}")
 
