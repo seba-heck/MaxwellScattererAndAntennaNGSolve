@@ -5,8 +5,8 @@
 
 import json
 import numpy as np
-from tqdm import trange
-import pandas as pd
+from tqdm import trange # type: ignore
+import pandas as pd # type: ignore
 import matplotlib.pyplot as plt
 from collections import Counter, defaultdict
 
@@ -22,29 +22,6 @@ job_list_file = "./cluster/configs/random_scatterer_ellipsoid_box_cylinder_jobs.
 
 with open(job_list_file, 'r') as f:
     jobs = json.load(f)
-
-
-# # Draw the geometry of a Job
-
-# job_id = 0
-
-# params = jobs[job_id]['parameters']
-# geometry_config = jobs[job_id]['geometry']
-# solver_config = jobs[job_id]['solver']
-
-# mesh,geometry_type = create_geometry(geometry_config, params)
-
-# draw_file = "./bin/imgs/test_visualization.html"
-# clipping = { "function" : True,  "pnt" : (0,0.0,0), "vec" : (0,0,-1) }
-
-# line_1 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['propagation_dir'][0], params['wavelength']+0.5*params['propagation_dir'][1], 0.5*params['propagation_dir'][2]], "name": "propagation direction", "color": "red",}
-# line_2 = { "type": "lines", "position": [params['wavelength'],params['wavelength'],0, params['wavelength']+0.5*params['polarization'][0], params['wavelength']+0.5*params['polarization'][1], 0.5*params['polarization'][2]], "name": "polarization direction", "color": "blue"}
-# points = { "type": "points", "position": [params['wavelength'],params['wavelength'],0], "size":20, "color": "black", "name": "origin"}
-# text_1 = { "type": "text", "name": "info1", "text": f" wavelength = {params['wavelength']}, outer radius = {geometry_config['R']}, PML width = {geometry_config['PMLw']}, mesh size = {geometry_config['h_max']}", "position": [-params['wavelength'],-params['wavelength']-0.3,0]}
-# text_2 = { "type": "text", "name": "info2", "text": f" elements = {mesh.ne}, vertices = {mesh.nv}, free DOFs = ?", "position": [-params['wavelength'],-params['wavelength']-0.5,0]}
-
-# Draw(mesh, "B", objects=[line_1,line_2,points,text_1,text_2], clipping=clipping, max = 10e-3, min = 0, draw_surf=False, filename=draw_file)
-
 
 # # Helper Functions Definitions
 def extract_all_parameters(jobs):
@@ -382,8 +359,7 @@ else:
 # # 2. MESH STATISTICS
 # ## ============================================================================
 mesh_stats = []
-#for jid in trange(len(jobs)):
-for jid in trange(0,7500,24):
+for jid in trange(len(jobs)):
     job = jobs[jid]
     params = job['parameters']
     geometry_config = job['geometry']
