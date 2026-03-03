@@ -24,7 +24,7 @@ from netgen.occ import (
     Ellipsoid, Cylinder, Sphere, Box,
     Glue, OCCGeometry,Rectangle,Circle,Ellipse,WorkPlane
 )
-from netgen.meshing import MeshingParameters
+from netgen.meshing import MeshingParameters,MeshingStep
 from ngsolve import Mesh
 import sys
 from typing import Optional, Tuple
@@ -66,15 +66,19 @@ def setup_basic_geometry(R: float, R_pml: float, max_mesh_size: float, scatterer
 
     return vacuum_region, pml_region
 
-def make_mesh_from_geometry(geometry, max_mesh_size: float, curve_order: int) -> Mesh:
+def make_mesh_from_geometry(geometry, max_mesh_size: float, curve_order: int, surface_mesh: bool = False) -> Mesh:
     # Generate mesh
     occ_geo = OCCGeometry(geometry)
-    ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)
-    ngmesh.SetGeometry(occ_geo)
 
-    # Convert to NGSolve mesh
-    mesh = Mesh(ngmesh)
-    mesh.Curve(curve_order)  # Higher-order geometry approximation
+    if surface_mesh:
+        mesh = occ_geo.GenerateMesh(maxh=max_mesh_size, perfstepsend=MeshingStep.MESHSURFACE)
+    else:
+        ngmesh = occ_geo.GenerateMesh(maxh=max_mesh_size)    
+        ngmesh.SetGeometry(occ_geo)
+
+        # Convert to NGSolve mesh
+        mesh = Mesh(ngmesh)
+        mesh.Curve(curve_order)  # Higher-order geometry approximation
 
     return mesh
 
@@ -84,7 +88,8 @@ def create_empty_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
-    curve_order: int = 5
+    curve_order: int = 5,
+    surface_mesh: bool = False
 ) -> Mesh:
     """
     Create geometry without scatterer object.
@@ -126,7 +131,7 @@ def create_empty_geometry(
     # Combine regions
     geometry = Glue([vacuum_region, pml_region])
 
-    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order, surface_mesh=surface_mesh)
 
     return mesh
 
@@ -140,7 +145,8 @@ def create_ellipsoid_scatterer_geometry(
     max_mesh_size: Optional[float] = None,
     scatterer_mesh_size: Optional[float] = None,
     orientation: str = 'z',
-    curve_order: int = 5
+    curve_order: int = 5,
+    surface_mesh: bool = False
 ) -> Mesh:
     """
     Create ellipsoidal scatterer geometry with PML boundary conditions.
@@ -233,13 +239,16 @@ def create_ellipsoid_scatterer_geometry(
     scatterer.faces.maxh = max_mesh_size if scatterer_mesh_size == None else scatterer_mesh_size
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
-    # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
+    if surface_mesh:
+        mesh = make_mesh_from_geometry(scatterer, max_mesh_size, curve_order, surface_mesh=surface_mesh)
+    else:
+        # Setup basic geometry regions
+        vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
-    # Combine regions
-    geometry = Glue([vacuum_region, pml_region])
+        # Combine regions
+        geometry = Glue([vacuum_region, pml_region])
 
-    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+        mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order, surface_mesh=surface_mesh)
 
     return mesh
 
@@ -254,7 +263,8 @@ def create_box_scatterer_geometry(
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
     scatterer_mesh_size: Optional[float] = None,
-    curve_order: int = 5
+    curve_order: int = 5,
+    surface_mesh: bool = False
 ) -> Mesh:
     """
     Create box scatterer geometry with PML boundary conditions.
@@ -343,7 +353,11 @@ def create_box_scatterer_geometry(
         mesh = Mesh(ngmesh)
         mesh.Curve(curve_order)  # Higher-order geometry approximation
     else:
-        mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+
+        if surface_mesh:
+            mesh = make_mesh_from_geometry(scatterer, max_mesh_size, curve_order, surface_mesh=surface_mesh)
+        else:
+            mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order, surface_mesh=surface_mesh)
 
     return mesh
 
@@ -358,7 +372,8 @@ def create_cylinder_scatterer_geometry(
     domain_radius: float = 1.0,
     pml_width: float = 0.25,
     max_mesh_size: Optional[float] = None,
-    curve_order: int = 5
+    curve_order: int = 5,
+    surface_mesh: bool = False
 ) -> Mesh:
     """
     Create cylinder scatterer geometry with PML boundary conditions.
@@ -439,13 +454,16 @@ def create_cylinder_scatterer_geometry(
     scatterer.faces.maxh = max_mesh_size / 4
     scatterer.faces.col = (1, 0, 0)  # Red for scatterer
 
-    # Setup basic geometry regions
-    vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
+    if surface_mesh:
+        mesh = make_mesh_from_geometry(scatterer, max_mesh_size, curve_order, surface_mesh=surface_mesh)
+    else:
+        # Setup basic geometry regions
+        vacuum_region, pml_region = setup_basic_geometry(domain_radius, pml_inner_radius, max_mesh_size, scatterer=scatterer)
 
-    # Combine regions
-    geometry = Glue([vacuum_region, pml_region])
+        # Combine regions
+        geometry = Glue([vacuum_region, pml_region])
 
-    mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order)
+        mesh = make_mesh_from_geometry(geometry, max_mesh_size, curve_order, surface_mesh=surface_mesh)
 
     return mesh
 
