@@ -22,6 +22,7 @@ from pathlib import Path
 from typing import Dict, Any
 import numpy as np
 from scipy import constants
+import pyvista as pv
 
 # Add parent directory to path to import src modules
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
@@ -228,27 +229,28 @@ def run_task(job_params: Dict[str, Any], job_path: str) -> Dict[str, Any]:
             "Config must specify either 'propagation_dir' (scattering) or 'amplitude' (antenna)"
         )
     
-    # Export E-field (real and imaginary parts for complex field)
-    vtk_path = job_path + "data-E_inc"
+    # Export incident wave (real and imaginary parts for complex field)
+    if False:
+        vtk_path = job_path + "data_E_inc"
 
-    vtk = VTKOutput(
-        ma=mesh,
-        coefs=[source.real[0], source.real[1], source.real[2], source.imag[0], source.imag[1], source.imag[2]],
-        names=["E_inc_real_x", "E_inc_real_y", "E_inc_real_z", "E_inc_imag_x", "E_inc_imag_y", "E_inc_imag_z"],
-        filename=vtk_path,
-        subdivision=2,
-        legacy=True
-    )
-    vtk.Do()
+        vtk = VTKOutput(
+            ma=mesh,
+            coefs=[source.real[0], source.real[1], source.real[2], source.imag[0], source.imag[1], source.imag[2]],
+            names=["E_inc_real_x", "E_inc_real_y", "E_inc_real_z", "E_inc_imag_x", "E_inc_imag_y", "E_inc_imag_z"],
+            filename=vtk_path,
+            subdivision=2,
+            legacy=True
+        )
+        vtk.Do()
 
-    vtu = VTKOutput(
-        ma=mesh,
-        coefs=[source.real[0], source.real[1], source.real[2], source.imag[0], source.imag[1], source.imag[2]],
-        names=["E_inc_real_x", "E_inc_real_y", "E_inc_real_z", "E_inc_imag_x", "E_inc_imag_y", "E_inc_imag_z"],
-        filename=vtk_path,
-        subdivision=2  # Smoother visualization in ParaView
-    )
-    vtu.Do()
+        vtu = VTKOutput(
+            ma=mesh,
+            coefs=[source.real[0], source.real[1], source.real[2], source.imag[0], source.imag[1], source.imag[2]],
+            names=["E_inc_real_x", "E_inc_real_y", "E_inc_real_z", "E_inc_imag_x", "E_inc_imag_y", "E_inc_imag_z"],
+            filename=vtk_path,
+            subdivision=2  # Smoother visualization in ParaView
+        )
+        vtu.Do()
 
     # 4. Setup unified Maxwell problem
     print(f"\n[3/4] Assembling FEM system ({problem_type} problem)...")
@@ -264,16 +266,18 @@ def run_task(job_params: Dict[str, Any], job_path: str) -> Dict[str, Any]:
     print(f"  ✓ System assembled in {time.perf_counter() - t0}s", flush=True)
 
     mu0 = 4*pi*1e-7
-    sigma = mesh.MaterialCF({"inner":np.inf}, default=1)
-    mu = mesh.MaterialCF({"inner":mu0}, default=mu0)
+    sigma = mesh.MaterialCF({"inner":1e16}, default=0)
+    mu = mesh.MaterialCF({"inner":0}, default=1)
+    Js = mesh.MaterialCF({"inner":0}, default=0)
+    ak = mesh.MaterialCF({"inner":0}, default=0)
 
     # Export material parameter (real and imaginary parts for complex field)
-    vtk_path = job_path + "data-params"
+    vtk_path = job_path + "data_params"
 
     vtk = VTKOutput(
         ma=problem.fes.mesh,
-        coefs=[sigma,mu],
-        names=["Conductivity", "Permeability"],
+        coefs=[sigma,mu,Js,ak],
+        names=["conductivity", "relative_permeability", "saturation_level", "knee_shape"],
         filename=vtk_path,
         subdivision=2,
         legacy=True
@@ -282,25 +286,51 @@ def run_task(job_params: Dict[str, Any], job_path: str) -> Dict[str, Any]:
 
     vtu = VTKOutput(
         ma=problem.fes.mesh,
-        coefs=[sigma,mu],
-        names=["Conductivity", "Permeability"],
+        coefs=[sigma,mu,Js,ak],
+        names=["conductivity", "relative_permeability", "saturation_level", "knee_shape"],
         filename=vtk_path,
         subdivision=2  # Smoother visualization in ParaView
     )
     vtu.Do()
 
+    # rename E_field files to 'data-E_field' for consistency
+    if os.path.exists(job_path + "E_field.vtk"):
+        os.rename(job_path + "E_field.vtk", job_path + "data-E_field.vtk")
+    if os.path.exists(job_path + "E_field.vtu"):
+        os.rename(job_path + "E_field.vtu", job_path + "data-E_field.vtu")
+
     print(f"  ✓ Saved material parameters in {time.perf_counter() - t0}s", flush=True)
     print(f"\n[4/4] Making inputs / natural seeds list...")
 
+    # Check results and meshes
+    # mesh_E_inc = pv.read(job_path+"data-E_inc.vtu")
+    mesh_E_fld = pv.read(job_path+"data_E_field.vtu")
+    mesh_param = pv.read(job_path+"data_params.vtu")
+
+    print(f"  Array names in params mesh: {mesh_param.array_names}")
+    print(f"  Array names in E_field mesh: {mesh_E_fld.array_names}")
+
+    assert mesh_E_fld.n_points == mesh_param.n_points, "✗ Mesh point counts do not match between E_inc, E_field, and parameters"
+    assert mesh_E_fld.n_cells == mesh_param.n_cells, "✗ Mesh cell counts do not match between E_inc, E_field, and parameters"
+
+    print(f"  ✓ Nbr. of points: {mesh_E_fld.n_points}, {mesh_param.n_points}")
+    print(f"  ✓ Nbr. of cells: {mesh_E_fld.n_cells}, {mesh_param.n_cells}")
+
     # Collect inputs
     inputs = {
-        'problem_type': problem_type,
-        'geometry_type': geometry_type,
         'wavelength': wavelength,
         'wavenumber': float(k),
-        'polarization': params['polarization'],
-        'propagation_dir': params['propagation_dir'],
         'frequency': float(constants.c / wavelength),
+        'amplitude': 1.0,
+        'polarization': params['polarization'],
+        'polarization_x': params['polarization'][0],
+        'polarization_y': params['polarization'][1],
+        'polarization_z': params['polarization'][2],
+        'propagation_dir': params['propagation_dir'],
+        'propagation_dir_x': params['propagation_dir'][0],
+        'propagation_dir_y': params['propagation_dir'][1],
+        'propagation_dir_z': params['propagation_dir'][2],
+        'permeability_vacuum': 1.256637061e-6,
         'turns_coil': 0.0
     }
 
@@ -363,7 +393,7 @@ def main():
             print(f"  Amplitude:    {params['amplitude']}")
         print(f"  Polarization: {params['polarization']}", flush=True)
     except Exception as e:
-        print(f"Error loading job parameters: {e}", file=sys.stderr)
+        print(f"✗ Error loading job parameters: {e}", file=sys.stderr)
         return 1
 
     # Run simulation
